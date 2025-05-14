@@ -1,0 +1,3065 @@
+---
+title: "Exo model 7 industries DEFLATED IO"
+author: "Simon"
+date: "2023-09-26"
+output: html_document
+---
+```{r}
+rm(list = ls())
+```
+
+
+# Packages
+
+```{r}
+library(bimets)
+library(tidyverse)
+library(tstools)
+```
+
+
+# Set theme for plots
+
+```{r}
+# Set a theme
+theme_journal <- function() {
+  par(
+    bg = "white",            # Background color
+    col.lab = "black",       # Axis labels color
+    col.main = "black",      # Main title color
+    col.axis = "black",      # Axis text color
+    font.main = 2,           # Main title font (2 = bold)
+    font.lab = 1,            # Axis labels font
+    font.axis = 1,           # Axis text font (1 = plain)
+    mar = c(5, 5, 4, 2) + 0.1, # Margins (bottom, left, top, right)
+    tck = -0.015,            # Tick mark length
+    las = 1,                 # Axis labels orientation (1 = horizontal)
+    mgp = c(3, 1, 0),        # Axis title and labels distance
+    cex.main = 1.2,          # Main title size
+    cex.lab = 1.1,           # Axis labels size
+    cex.axis = 1,            # Axis text size
+    lwd = 2                  # Line width
+  )
+}
+
+
+```
+
+
+# Load in txt file
+
+
+THE ELASTICITIES SHOULD ALL be checked
+
+
+```{r}
+library(readr)
+
+Model_code <- 'Model code'
+
+
+S_model.txt=readChar(Model_code, file.info(Model_code)$size)
+
+```
+
+# Check text!
+
+```{r}
+S_model=LOAD_MODEL(modelText = S_model.txt)
+```
+
+
+# Data
+
+We create a list to store the variables within
+
+```{r}
+
+library(readxl)
+Model_data_1995 <- read_excel("Model data/Model_data_1995.xlsx") # Data from Sectoral national accounts
+Model_data_1996 <- read_excel("Model data/Model_data_1996.xlsx") # Data from Sectoral national accounts
+Trade_variables <- read_excel("Model data/Trade variables.xlsx") # Trade data
+Model_data_collected_IO <- read_excel("Model data/Model_data_collected_IO_117.xlsx") # Input-Output Data calculated from Statistics Denmark and GreenREFORM data bank
+Emission_coeff_data <- read_excel("Model data/Emission_coeff_data.xlsx") # Emission coefficients calculated from Statistics Denmark and GreenREFORM data bank
+Model_data_RER_1995 <- read_excel("Model data/Model_data_RER_1995.xlsx") #Introduction of export and import data at industry level
+Model_data_RER_1996 <- read_excel("Model data/Model_data_RER_1996.xlsx") #Introduction of export and import data at industry level
+Model_baci_data <- read_excel("Model data/Model_baci_data.xlsx") # Market shares based on data from BACI
+Model_data_leak <- read_excel("Model data/Model_data_leak.xlsx") # Carbon lekage coefficients
+Model_data_cons <- read_excel("Model data/Model_data_cons.xlsx") # Equations introducing substitution between final consumption products
+Model_data_industry_sector_shares <- read_excel("Model data/Model_data_industry_sector_shares.xlsx") # Data for a consistent transition from Industry to Sectoral level
+Model_data_emis_adj <- read_excel("Model data/Model_data_emis_adj.xlsx") # Agriculture data used to adjust emission coefficients endogenously in the model
+
+
+
+Model_data_1995=lapply(Model_data_1995, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_1996=lapply(Model_data_1996, function(t) TIMESERIES(t, START=c(1996, 1),FREQ =1))
+Trade_variables=lapply(Trade_variables, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_collected_IO=lapply(Model_data_collected_IO, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Emission_coeff_data=lapply(Emission_coeff_data, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_RER_1995=lapply(Model_data_RER_1995, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_RER_1996=lapply(Model_data_RER_1996, function(t) TIMESERIES(t, START=c(1996, 1),FREQ =1))
+Model_baci_data=lapply(Model_baci_data, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_leak=lapply(Model_data_leak, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_cons=lapply(Model_data_cons, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_industry_sector_shares=lapply(Model_data_industry_sector_shares, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_emis_adj=lapply(Model_data_emis_adj, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+
+
+S_modelData=c(Model_data_1995, Model_data_1996,Model_data_collected_IO,Trade_variables,Emission_coeff_data,Model_data_RER_1995,Model_data_RER_1996,Model_baci_data,Model_data_cons,Model_data_industry_sector_shares,Model_data_leak,Model_data_emis_adj)
+
+```
+
+
+
+## Shock variables:
+
+```{r}
+######### Variables used to introduce Scenario 1 (Consumption tax)
+
+S_modelData$Scenario_1= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+
+
+######### Variables used to introduce Scenario 2 (Production tax)
+S_modelData$Scenario_2= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+S_modelData$tot_env_tax_exc_rent_1_base= S_modelData$tot_env_tax_exc_rent_1
+S_modelData$tot_env_tax_exc_rent_1_S2= S_modelData$tot_env_tax_exc_rent_1
+S_modelData$tot_env_tax_exc_rent_1_S5= S_modelData$tot_env_tax_exc_rent_1
+
+
+######### Variables used to introduce Scenario 3 (Production tax in combination with a Carbon Border Adjustment Mechanism)
+
+S_modelData$Scenario_3= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+
+
+######### Variables used to introduce Scenario 3 (Consumption tax in combination with consumption subsidies)
+
+S_modelData$Scenario_4= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+
+
+
+####### Variables used to perform sensitivity analyses
+
+S_modelData$Sens_1= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$Sens_2= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$Sens_3= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$Sens_4= TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+```
+
+## Dummy and trend variables
+
+```{r}
+
+
+S_modelData$d_2001=create_dummy_ts(start_basic = c(1995), end_basic=c(2100),
+ dummy_start=c(2001), dummy_end = c(2001),
+ basic_value = 0, dummy_value = 1, frequency = 1)
+
+S_modelData$d_2014=create_dummy_ts(start_basic = c(1995), end_basic=c(2100),
+ dummy_start=c(2014), dummy_end = c(2014),
+ basic_value = 0, dummy_value = 1, frequency = 1)
+
+S_modelData$d_2020=create_dummy_ts(start_basic = c(1995), end_basic=c(2100),
+ dummy_start=c(2020), dummy_end = c(2020),
+ basic_value = 0, dummy_value = 1, frequency = 1)
+
+
+S_modelData$time= TIMESERIES(0:length(S_modelData$d_2016), START = c(1995,1), FREQ = 1)
+
+```
+
+
+
+## Variables that need to be defined
+
+These variables are not directly taken from the national accounts, we calculate them ourself to be able to match them with the model simulations.
+
+```{r}
+
+
+S_modelData$y_h = S_modelData$w_h_r + S_modelData$b2_h_r + S_modelData$nint_h + S_modelData$ndiv_h + S_modelData$re_fdi_r_h + S_modelData$noir_h - S_modelData$scon_p_h + S_modelData$sben_r_h + S_modelData$oct_h
+
+S_modelData$y_nfc = S_modelData$y + S_modelData$b2_nfc_r - S_modelData$b2_tot - (S_modelData$n_prod_tax_tot + S_modelData$opt_tot) - S_modelData$w_nfc + S_modelData$nint_nfc + S_modelData$ndiv_nfc + S_modelData$noir_nfc + (S_modelData$re_fdi_r_nfc - S_modelData$re_fdi_p_nfc)  + S_modelData$oct_nfc
+ 
+S_modelData$y_fc = S_modelData$b2_fc_r + S_modelData$nint_fc + S_modelData$ndiv_fc + S_modelData$noir_fc + (S_modelData$re_fdi_r_fc - S_modelData$re_fdi_p_fc)  + S_modelData$scon_r_fc - S_modelData$sben_p_fc + S_modelData$oct_fc
+
+
+
+S_modelData$eq_h_ratio= (S_modelData$neq_h - S_modelData$neq_h_rv)/(TSLAG(S_modelData$neq_h,1) +TSLAG(S_modelData$nsec_h,1) +TSLAG(S_modelData$ndepo_h,1) +  TSLAG(S_modelData$nloa_h,1) +  TSLAG(S_modelData$ninsu_h,1)+ TSLAG(S_modelData$ndir_h,1)+ TSLAG(S_modelData$ncred_h,1))
+
+
+S_modelData$nloa_h_ratio= -S_modelData$nloa_h/S_modelData$yd_h
+S_modelData$nloa_h_tr_ratio= -S_modelData$nloa_h_tr/S_modelData$yd_h
+
+
+
+S_modelData$nloa_nfc_ratio=-S_modelData$nloa_nfc/S_modelData$K_nfc
+S_modelData$nloa_nfc_tr_ratio=-S_modelData$nloa_nfc_tr/S_modelData$K_nfc
+
+
+
+
+```
+
+
+
+As we use price indexes based on the input output tables, making the assumption of one price for industry 1-9 and so on, we do not match the aggregate price indexes based on aggregate variables.
+
+We can update the current price indexes with the new ones calculated based on IO data. 
+
+```{r}
+S_modelData$ppcon=S_modelData$ppcon_io
+S_modelData$pin=S_modelData$pin_io
+S_modelData$pinvent=S_modelData$pinvent_io
+S_modelData$px=S_modelData$px_io
+S_modelData$pg=S_modelData$pg_io
+S_modelData$pim=S_modelData$pim_io
+```
+
+
+We need to calculate new deflated variables:
+
+```{r}
+
+S_modelData$pconk_io=S_modelData$pcon/S_modelData$ppcon
+S_modelData$ik_io=S_modelData$i/S_modelData$pin
+S_modelData$inventk_io=S_modelData$invent/S_modelData$pinvent
+S_modelData$xk_io=S_modelData$x/S_modelData$px
+S_modelData$gk_io=S_modelData$g/S_modelData$pg
+S_modelData$imk_io=S_modelData$im /S_modelData$pim
+
+
+S_modelData$yk_io= S_modelData$pconk_io + S_modelData$ik_io + S_modelData$inventk_io + S_modelData$xk_io + S_modelData$gk_io - S_modelData$imk_io
+S_modelData$nxk  = S_modelData$xk - S_modelData$imk
+```
+
+
+
+
+```{r}
+
+S_modelData$pconk=S_modelData$pcon/S_modelData$ppcon
+S_modelData$ik=S_modelData$i/S_modelData$pin
+S_modelData$inventk=S_modelData$invent/S_modelData$pinvent
+S_modelData$xk=S_modelData$x/S_modelData$px
+S_modelData$gk=S_modelData$g/S_modelData$pg
+S_modelData$imk=S_modelData$im /S_modelData$pim
+
+
+S_modelData$yk= S_modelData$pconk + S_modelData$ik + S_modelData$inventk + S_modelData$xk + S_modelData$gk - S_modelData$imk
+
+```
+
+
+```{r}
+S_modelData$tot_env_diff = TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+```
+
+
+## Consumption tax
+
+```{r}
+
+S_modelData$c_oth_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_110_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_120_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_130_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_140_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_160_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_180_im_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+S_modelData$c_oth_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_110_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_120_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_130_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_140_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_160_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_180_dom_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+S_modelData$c_oth_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_110_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_120_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_130_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_140_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_160_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+S_modelData$c_180_envT=TIMESERIES(rep(0,100), START = c(1995,1), FREQ = 1)
+
+
+S_modelData$c_envT= S_modelData$c_oth_envT + S_modelData$c_110_envT + S_modelData$c_120_envT + S_modelData$c_130_envT + S_modelData$c_140_envT + S_modelData$c_160_envT + S_modelData$c_180_envT
+
+S_modelData$envT_tot =  S_modelData$c_envT
+
+```
+
+
+
+We also create new deflated yd and fnw variables, where tax changes are included:
+
+```{r}
+S_modelData$K_nfc_k= S_modelData$K_nfc/S_modelData$pin
+S_modelData$K_h_k= S_modelData$K_h/S_modelData$pin
+S_modelData$K_fc_k= S_modelData$K_fc/S_modelData$pin
+S_modelData$K_g_k= S_modelData$K_g/S_modelData$pin
+
+
+S_modelData$yd_hk_tax=S_modelData$yd_h/S_modelData$ppcon_tax
+S_modelData$fnw_hk_tax = S_modelData$fnw_h/S_modelData$ppcon_tax
+
+S_modelData$invk_ratio = S_modelData$invk_tot/TSLAG(S_modelData$K_nfc_k,1)
+```
+
+
+
+## Co2E tax
+
+We create a tax rate for environmental taxes paid within each industry, as a function of Co2E emissions:
+
+```{r}
+S_modelData$Co2E_tax_1=S_modelData$tot_env_tax_exc_rent_1/S_modelData$Co2E_1_debunk
+S_modelData$Co2E_tax_2=S_modelData$tot_env_tax_exc_rent_2/S_modelData$Co2E_2_debunk
+S_modelData$Co2E_tax_3=S_modelData$tot_env_tax_exc_rent_3/S_modelData$Co2E_3_debunk
+S_modelData$Co2E_tax_4=S_modelData$tot_env_tax_exc_rent_4/S_modelData$Co2E_4_debunk
+S_modelData$Co2E_tax_5=S_modelData$tot_env_tax_exc_rent_5/S_modelData$Co2E_5_debunk
+S_modelData$Co2E_tax_6=S_modelData$tot_env_tax_exc_rent_6/S_modelData$Co2E_6_debunk
+S_modelData$Co2E_tax_7=S_modelData$tot_env_tax_exc_rent_7/S_modelData$Co2E_7_debunk
+S_modelData$Co2E_tax_8=S_modelData$tot_env_tax_exc_rent_8/S_modelData$Co2E_8_debunk
+S_modelData$Co2E_tax_9=S_modelData$tot_env_tax_exc_rent_9/S_modelData$Co2E_9_debunk
+```
+
+
+
+
+
+## Fixed real wages
+
+
+```{r}
+S_modelData$avg_w_t = TSLAG(S_modelData$avg_w,1) * (1+TSLAG(TSDELTALOG(S_modelData$ppcon_tax),1))
+
+S_modelData$avg_prodk = S_modelData$yk / S_modelData$emp_tot
+```
+
+
+
+
+# Forecasting model
+
+```{r}
+Model_data_forecast_1995 <- read_excel("Model data/Model_data_forecast_1995.xlsx") # Forecasted exogenous variables
+Model_data_forecast_1996 <- read_excel("Model data/Model_data_forecast_1996.xlsx") # Forecasted exogenous variables
+
+Model_data_forecast_1995=lapply(Model_data_forecast_1995, function(t) TIMESERIES(t, START=c(1995, 1),FREQ =1))
+Model_data_forecast_1996=lapply(Model_data_forecast_1996, function(t) TIMESERIES(t, START=c(1996, 1),FREQ =1))
+
+Model_data_forecast=c(Model_data_forecast_1995,Model_data_forecast_1996)
+```
+
+
+
+We can update the exogenous variables with the forecasts from "Forecast data.Rmd"
+
+```{r}
+
+series_names <- names(Model_data_forecast)
+
+S_modelData_F=S_modelData
+
+for (name in series_names) {
+  # Update or add the extended time series in S_modelData
+  S_modelData_F[[name]] <- Model_data_forecast[[name]]
+}
+
+```
+
+
+
+
+# Combine model with data!
+
+```{r}
+S_model=LOAD_MODEL_DATA(S_model,S_modelData_F)
+```
+
+
+# Estimate
+
+```{r}
+
+#Estimate model coefficients
+S_model=ESTIMATE(S_model
+                 ,TSRANGE=c(1996,1,2020,1)
+)
+```
+
+
+
+## Exo list
+
+I guess i only need the variables used for behavioural equations
+
+```{r}
+# Define exogenization list to 2020
+exogenizeList <- list(
+  
+  #Adjusted variables in 1995-2020
+  ck_tot = c(1995,1,2020,1),
+  invk_ratio = c(1995,1,2020,1),
+  avg_w = c(1995,1,2020,1),
+  w_1 = c(1995,1,2020,1),
+  w_2 = c(1995,1,2020,1),
+  w_3 = c(1995,1,2020,1),
+  w_4 = c(1995,1,2020,1),
+  w_5 = c(1995,1,2020,1),
+  w_6 = c(1995,1,2020,1),
+  w_7 = c(1995,1,2020,1),
+  w_8 = c(1995,1,2020,1),
+  w_9 = c(1995,1,2020,1),
+  phi_c_oth= c(1995,1,2020,1),
+  phi_c_110= c(1995,1,2020,1),
+  phi_c_120= c(1995,1,2020,1),
+  phi_c_130= c(1995,1,2020,1),
+  phi_c_140= c(1995,1,2020,1),
+  phi_c_160= c(1995,1,2020,1),
+  phi_c_180= c(1995,1,2020,1),
+  i_tax_fc= c(1995,1,2020,1),
+  i_tax_h= c(1995,1,2020,1),
+  i_tax_nfc= c(1995,1,2020,1),
+  nloa_h_tr_ratio= c(1995,1,2020,1),
+  eq_h_ratio= c(1995,1,2020,1),
+  nloa_nfc_tr_ratio= c(1995,1,2020,1)
+
+)
+```
+
+
+# Baseline
+
+
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2015,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=200
+                    ,verbose = F
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+```{r}
+
+Exo_model$simulation$check_nl
+Exo_model$simulation$check_sec
+Exo_model$simulation$check_np
+Exo_model$simulation$check_ctr
+Exo_model$simulation$check_invest
+Exo_model$simulation$check_tax
+Exo_model$simulation$check_neq
+
+```
+
+
+Defining variables:
+
+
+
+
+
+# Model evaluation:
+
+
+```{r, fig.width=20, fig.height=15}
+
+par(mfrow = c(3, 3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+theme_journal()
+
+plot(Exo_model$simulation$Xk_dom_1, col= "red", ylab= "B. DKR" , main= "Agriculture/Forresty/Fishery", lwd=3, xlab="" , ylim= c(66,90) , cex.main=2); lines(S_modelData$Xk_dom_1, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_2, col= "red", ylab= "B. DKR" , main= "Mining", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_2, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topright",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_3, col= "red", ylab= "B. DKR" , main= "Production of meat and fish", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_3, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_4, col= "red", ylab= "B. DKR" , main= "Production of Dairy", lwd=3, xlab="", ylim= c(30,48) , cex.main=2); lines(S_modelData$Xk_dom_4, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_5, col= "red", ylab= "B. DKR" , main= "Production of bread", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_5, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_6, col= "red", ylab= "B. DKR" , main= "Production of other food", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_6, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_7, col= "red", ylab= "B. DKR" , main= "Energy intensive industries", lwd=3, xlab="" , ylim= c(250,400), cex.main=2); lines(S_modelData$Xk_dom_7, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_8, col= "red", ylab= "B. DKR" , main= "Energy production", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_8, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$Xk_dom_9, col= "red", ylab= "B. DKR" , main= "Other industries", lwd=3, xlab="" , ylim= c(2600,4000), cex.main=2); lines(S_modelData$Xk_dom_9, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+
+
+```
+
+
+
+```{r, fig.width=20, fig.height=10}
+
+par(mfrow = c(2, 3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+theme_journal()
+
+plot(Exo_model$simulation$pconk, col= "red", ylab= "B. DKR" , main= "Domestic consumption", ylim=c(800,1500), lwd=3, xlab="", cex.main=1.8); lines(S_modelData$pcon_2010_pout, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+
+plot(Exo_model$simulation$yk, col= "red", ylab= "B. DKR" , main= "Real GDP", ylim=c(1300,3500) , lwd=3, xlab="", cex.main=1.8); lines(S_modelData$yk, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid() 
+
+
+plot(Exo_model$simulation$ik, col= "red", ylab= "B. DKR" , main= "Real Investments", ylim=c(250,1000) , lwd=3, xlab="", cex.main=1.8); lines(S_modelData$inv_2010_pout, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+
+plot(Exo_model$simulation$xk, col= "red", ylab= "B. DKR" , main= "Real export", ylim=c(900,1600) , lwd=3, xlab="", cex.main=1.8); lines(S_modelData$ex_2010_pout, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+
+plot(Exo_model$simulation$imk, col= "red", ylab= "B. DKR" , main= "Real imports", ylim=c(800,1600) , lwd=3, xlab="", cex.main=1.8); lines(S_modelData$imk, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model$simulation$emp_tot, col= "red", ylab= "1000 people" , main= "employment" , lwd=3, ylim=c(2700,3400), xlab="", cex.main=1.8); 
+lines(S_modelData$emp_tot, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); 
+grid()
+
+
+
+```
+
+
+
+
+```{r, fig.width=20, fig.height=10}
+
+par(mfrow = c(2, 3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+theme_journal()
+
+plot(Exo_model$simulation$CH4_tot/1000000000*25, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to CH4", lwd=3, xlab="", ylim=c(6.7,9), cex.main=1.5); lines(S_modelData$CH4_tot/1000000000*25, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+
+plot(Exo_model$simulation$N2O_tot/1000000000*298, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to N2O", lwd=3, xlab="", ylim=c(5,7), cex.main=1.5); lines(S_modelData$N2O_tot/1000000000*298, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+grid()
+
+plot(Exo_model$simulation$Co2_tot/1000000000, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to CO2", lwd=3, xlab="", ylim=c(0,120), cex.main=1.5); lines(S_modelData$Co2_tot/1000000000, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+
+plot(Exo_model$simulation$HFC_tot/1000000000, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to HFC", lwd=3, xlab="", cex.main=1.5); lines(S_modelData$HFC_tot/1000000000, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+
+plot(Exo_model$simulation$PFC_tot/1000000000, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to PFC", lwd=3, xlab="", ylim=c(0,0.035), cex.main=1.5); lines(S_modelData$PFC_tot/1000000000, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+
+plot(Exo_model$simulation$SF6_tot/1000000000, col= "red", ylab= "Million tons CO2-equivelant" , main= "CO2E emissions related to SF6", lwd=3, xlab="", cex.main=1.5); lines(S_modelData$SF6_tot/1000000000, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.5); grid()
+
+
+
+```
+
+
+
+# Consistency checks
+
+```{r, fig.width=15, fig.height=7}
+
+par(mfrow=c(1,2))
+
+plot(Exo_model$simulation$check_sec/Exo_model$simulation$y, col= "red", ylab= "" , main= "check_sec/y", ylim=c(-0.001,0.001), lwd=3, xlab="");grid()
+
+plot(Exo_model$simulation$check_nl/Exo_model$simulation$y, col= "red", ylab= "" , main= "check_nl/y", ylim=c(-0.001,0.001), lwd=3, xlab="");grid()
+
+```
+
+
+
+# Scenario 1: Consumption tax
+
+
+
+```{r}
+
+Scenario_1_shock= S_modelData$Scenario_1 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s1 <- list(
+  
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2015,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=200
+                    ,ConstantAdjustment=constantAdjList_s1
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S1$simulation$check_nl 
+Exo_model_S1$simulation$check_sec
+Exo_model_S1$simulation$check_np
+Exo_model_S1$simulation$check_neq
+Exo_model_S1$simulation$check_ctr
+Exo_model_S1$simulation$check_invest
+Exo_model_S1$simulation$check_tax
+Exo_model_S1$simulation$check_neq
+```
+
+
+
+
+# Scenario 2: Production based taxation
+
+```{r}
+
+Scenario_2_shock= S_modelData$Scenario_2 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s2 <- list(
+
+Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S2 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2015,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=200
+                    ,ConstantAdjustment=constantAdjList_s2
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S2$simulation$check_nl 
+Exo_model_S2$simulation$check_sec
+Exo_model_S2$simulation$check_np
+Exo_model_S2$simulation$check_ctr
+Exo_model_S2$simulation$check_invest
+Exo_model_S2$simulation$check_tax
+```
+
+
+
+# Scenario 3: Carbon Border Adjustment Mechanisme + production tax
+
+```{r}
+
+Scenario_3_shock= S_modelData$Scenario_3 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s3 <- list(
+
+  Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_3 = TIMESERIES(Scenario_3_shock+1 ,START=c(2025,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S3 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2015,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=200
+                    ,ConstantAdjustment=constantAdjList_s3
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S3$simulation$check_nl 
+Exo_model_S3$simulation$check_sec
+Exo_model_S3$simulation$check_np
+Exo_model_S3$simulation$check_ctr
+Exo_model_S3$simulation$check_invest
+Exo_model_S3$simulation$check_tax
+
+```
+
+
+
+# Scenario 4: Consumption subsidies + consumption tax
+
+```{r}
+
+Scenario_4_shock= S_modelData$Scenario_4 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s4 <- list(
+  
+Scenario_4 = TIMESERIES(Scenario_4_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1)
+)
+
+```
+
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S4 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2015,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=200
+                    ,ConstantAdjustment=constantAdjList_s4
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S4$simulation$check_nl 
+Exo_model_S4$simulation$check_sec
+Exo_model_S4$simulation$check_np
+Exo_model_S4$simulation$check_ctr
+Exo_model_S4$simulation$check_invest
+Exo_model_S4$simulation$check_tax
+
+```
+
+
+
+# Calculating Carbon leakage effects
+
+
+
+### S1
+
+We multiply by 1000 as the carbon leakage coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S1_Delta= Exo_model_S1$simulation$exk_1*1000 - Exo_model$simulation$exk_1*1000 
+exk_2_tot_S1_Delta= Exo_model_S1$simulation$exk_2*1000 - Exo_model$simulation$exk_2*1000
+exk_3_tot_S1_Delta= Exo_model_S1$simulation$exk_3*1000 - Exo_model$simulation$exk_3*1000
+exk_4_tot_S1_Delta= Exo_model_S1$simulation$exk_4*1000 - Exo_model$simulation$exk_4*1000
+exk_5_tot_S1_Delta= Exo_model_S1$simulation$exk_5*1000 - Exo_model$simulation$exk_5*1000
+exk_6_tot_S1_Delta= Exo_model_S1$simulation$exk_6*1000 - Exo_model$simulation$exk_6*1000
+exk_7_tot_S1_Delta= Exo_model_S1$simulation$exk_7*1000 - Exo_model$simulation$exk_7*1000
+exk_8_tot_S1_Delta= Exo_model_S1$simulation$exk_8*1000 - Exo_model$simulation$exk_8*1000
+exk_9_tot_S1_Delta= Exo_model_S1$simulation$exk_9*1000 - Exo_model$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S1= exk_1_tot_S1_Delta*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S1= exk_2_tot_S1_Delta*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S1= exk_3_tot_S1_Delta*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S1= exk_4_tot_S1_Delta*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S1= exk_5_tot_S1_Delta*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S1= exk_6_tot_S1_Delta*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S1= exk_7_tot_S1_Delta*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S1= exk_8_tot_S1_Delta*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S1= exk_9_tot_S1_Delta*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S1=Delta_GHG_ex_row_1_S1 + Delta_GHG_ex_row_2_S1 + Delta_GHG_ex_row_3_S1 + Delta_GHG_ex_row_4_S1 + Delta_GHG_ex_row_5_S1 + Delta_GHG_ex_row_6_S1 + Delta_GHG_ex_row_7_S1 + Delta_GHG_ex_row_8_S1 + Delta_GHG_ex_row_9_S1
+
+# Carbon leakage through imports
+
+imk_1_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_1*1000 - Exo_model$simulation$Xk_im_1*1000
+imk_2_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_2*1000 - Exo_model$simulation$Xk_im_2*1000
+imk_3_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_3*1000 - Exo_model$simulation$Xk_im_3*1000
+imk_4_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_4*1000 - Exo_model$simulation$Xk_im_4*1000
+imk_5_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_5*1000 - Exo_model$simulation$Xk_im_5*1000
+imk_6_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_6*1000 - Exo_model$simulation$Xk_im_6*1000
+imk_7_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_7*1000 - Exo_model$simulation$Xk_im_7*1000
+imk_8_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_8*1000 - Exo_model$simulation$Xk_im_8*1000
+imk_9_tot_S1_Delta= Exo_model_S1$simulation$Xk_im_9*1000 - Exo_model$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S1= imk_1_tot_S1_Delta*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S1= imk_2_tot_S1_Delta*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S1= imk_3_tot_S1_Delta*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S1= imk_4_tot_S1_Delta*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S1= imk_5_tot_S1_Delta*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S1= imk_6_tot_S1_Delta*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S1= imk_7_tot_S1_Delta*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S1= imk_8_tot_S1_Delta*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S1= imk_9_tot_S1_Delta*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S1=Delta_GHG_im_row_1_S1 + Delta_GHG_im_row_2_S1 + Delta_GHG_im_row_3_S1 + Delta_GHG_im_row_4_S1 + Delta_GHG_im_row_5_S1 + Delta_GHG_im_row_6_S1 + Delta_GHG_im_row_7_S1  + Delta_GHG_im_row_8_S1 + Delta_GHG_im_row_9_S1
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S1 = Delta_GHG_ex_row_1_S1 + Delta_GHG_im_row_1_S1
+Delta_GHG_2_row_S1 = Delta_GHG_ex_row_2_S1 + Delta_GHG_im_row_2_S1
+Delta_GHG_3_row_S1 = Delta_GHG_ex_row_3_S1 + Delta_GHG_im_row_3_S1
+Delta_GHG_4_row_S1 = Delta_GHG_ex_row_4_S1 + Delta_GHG_im_row_4_S1
+Delta_GHG_5_row_S1 = Delta_GHG_ex_row_5_S1 + Delta_GHG_im_row_5_S1
+Delta_GHG_6_row_S1 = Delta_GHG_ex_row_6_S1 + Delta_GHG_im_row_6_S1
+Delta_GHG_7_row_S1 = Delta_GHG_ex_row_7_S1 + Delta_GHG_im_row_7_S1
+Delta_GHG_8_row_S1 = Delta_GHG_ex_row_8_S1 + Delta_GHG_im_row_8_S1
+Delta_GHG_9_row_S1 = Delta_GHG_ex_row_9_S1 + Delta_GHG_im_row_9_S1
+
+
+
+Delta_GHG_tot_row_S1 = Delta_GHG_tot_ex_S1 + Delta_GHG_tot_im_S1
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S1=cumsum(Delta_GHG_1_row_S1)
+Delta_GHG_2_cusum_row_S1=cumsum(Delta_GHG_2_row_S1)
+Delta_GHG_3_cusum_row_S1=cumsum(Delta_GHG_3_row_S1)
+Delta_GHG_4_cusum_row_S1=cumsum(Delta_GHG_4_row_S1)
+Delta_GHG_5_cusum_row_S1=cumsum(Delta_GHG_5_row_S1)
+Delta_GHG_6_cusum_row_S1=cumsum(Delta_GHG_6_row_S1)
+Delta_GHG_7_cusum_row_S1=cumsum(Delta_GHG_7_row_S1)
+Delta_GHG_8_cusum_row_S1=cumsum(Delta_GHG_8_row_S1)
+Delta_GHG_9_cusum_row_S1=cumsum(Delta_GHG_9_row_S1)
+
+Delta_GHG_tot_cusum_row_S1=cumsum(Delta_GHG_tot_row_S1)
+```
+
+We calculate the change in emission for Denmark.
+
+```{r}
+
+Delta_GHG_1_DK_S1= Exo_model_S1$simulation$Co2E_1/1000 - Exo_model$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S1= Exo_model_S1$simulation$Co2E_2/1000 - Exo_model$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S1= Exo_model_S1$simulation$Co2E_3/1000 - Exo_model$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S1= Exo_model_S1$simulation$Co2E_4/1000 - Exo_model$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S1= Exo_model_S1$simulation$Co2E_5/1000 - Exo_model$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S1= Exo_model_S1$simulation$Co2E_6/1000 - Exo_model$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S1= Exo_model_S1$simulation$Co2E_7/1000 - Exo_model$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S1= Exo_model_S1$simulation$Co2E_8/1000 - Exo_model$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S1= Exo_model_S1$simulation$Co2E_9/1000 - Exo_model$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S1= Exo_model_S1$simulation$Co2E_HH/1000 - Exo_model$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S1 =Exo_model_S1$simulation$Co2E_tot/1000 - Exo_model$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S1=cumsum(Delta_GHG_tot_DK_S1)
+```
+
+
+
+
+### S2
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S2_Delta= Exo_model_S2$simulation$exk_1*1000 - Exo_model$simulation$exk_1*1000 
+exk_2_tot_S2_Delta= Exo_model_S2$simulation$exk_2*1000 - Exo_model$simulation$exk_2*1000
+exk_3_tot_S2_Delta= Exo_model_S2$simulation$exk_3*1000 - Exo_model$simulation$exk_3*1000
+exk_4_tot_S2_Delta= Exo_model_S2$simulation$exk_4*1000 - Exo_model$simulation$exk_4*1000
+exk_5_tot_S2_Delta= Exo_model_S2$simulation$exk_5*1000 - Exo_model$simulation$exk_5*1000
+exk_6_tot_S2_Delta= Exo_model_S2$simulation$exk_6*1000 - Exo_model$simulation$exk_6*1000
+exk_7_tot_S2_Delta= Exo_model_S2$simulation$exk_7*1000 - Exo_model$simulation$exk_7*1000
+exk_8_tot_S2_Delta= Exo_model_S2$simulation$exk_8*1000 - Exo_model$simulation$exk_8*1000
+exk_9_tot_S2_Delta= Exo_model_S2$simulation$exk_9*1000 - Exo_model$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S2= exk_1_tot_S2_Delta*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S2= exk_2_tot_S2_Delta*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S2= exk_3_tot_S2_Delta*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S2= exk_4_tot_S2_Delta*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S2= exk_5_tot_S2_Delta*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S2= exk_6_tot_S2_Delta*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S2= exk_7_tot_S2_Delta*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S2= exk_8_tot_S2_Delta*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S2= exk_9_tot_S2_Delta*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S2=Delta_GHG_ex_row_1_S2 + Delta_GHG_ex_row_2_S2 + Delta_GHG_ex_row_3_S2 + Delta_GHG_ex_row_4_S2 + Delta_GHG_ex_row_5_S2 + Delta_GHG_ex_row_6_S2 + Delta_GHG_ex_row_7_S2 + Delta_GHG_ex_row_8_S2 + Delta_GHG_ex_row_9_S2
+
+# Carbon leakage through imports
+
+imk_1_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_1*1000 - Exo_model$simulation$Xk_im_1*1000
+imk_2_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_2*1000 - Exo_model$simulation$Xk_im_2*1000
+imk_3_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_3*1000 - Exo_model$simulation$Xk_im_3*1000
+imk_4_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_4*1000 - Exo_model$simulation$Xk_im_4*1000
+imk_5_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_5*1000 - Exo_model$simulation$Xk_im_5*1000
+imk_6_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_6*1000 - Exo_model$simulation$Xk_im_6*1000
+imk_7_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_7*1000 - Exo_model$simulation$Xk_im_7*1000
+imk_8_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_8*1000 - Exo_model$simulation$Xk_im_8*1000
+imk_9_tot_S2_Delta= Exo_model_S2$simulation$Xk_im_9*1000 - Exo_model$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S2= imk_1_tot_S2_Delta*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S2= imk_2_tot_S2_Delta*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S2= imk_3_tot_S2_Delta*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S2= imk_4_tot_S2_Delta*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S2= imk_5_tot_S2_Delta*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S2= imk_6_tot_S2_Delta*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S2= imk_7_tot_S2_Delta*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S2= imk_8_tot_S2_Delta*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S2= imk_9_tot_S2_Delta*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S2=Delta_GHG_im_row_1_S2 + Delta_GHG_im_row_2_S2 + Delta_GHG_im_row_3_S2 + Delta_GHG_im_row_4_S2 + Delta_GHG_im_row_5_S2 + Delta_GHG_im_row_6_S2 + Delta_GHG_im_row_7_S2  + Delta_GHG_im_row_8_S2 + Delta_GHG_im_row_9_S2
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S2 = Delta_GHG_ex_row_1_S2 + Delta_GHG_im_row_1_S2
+Delta_GHG_2_row_S2 = Delta_GHG_ex_row_2_S2 + Delta_GHG_im_row_2_S2
+Delta_GHG_3_row_S2 = Delta_GHG_ex_row_3_S2 + Delta_GHG_im_row_3_S2
+Delta_GHG_4_row_S2 = Delta_GHG_ex_row_4_S2 + Delta_GHG_im_row_4_S2
+Delta_GHG_5_row_S2 = Delta_GHG_ex_row_5_S2 + Delta_GHG_im_row_5_S2
+Delta_GHG_6_row_S2 = Delta_GHG_ex_row_6_S2 + Delta_GHG_im_row_6_S2
+Delta_GHG_7_row_S2 = Delta_GHG_ex_row_7_S2 + Delta_GHG_im_row_7_S2
+Delta_GHG_8_row_S2 = Delta_GHG_ex_row_8_S2 + Delta_GHG_im_row_8_S2
+Delta_GHG_9_row_S2 = Delta_GHG_ex_row_9_S2 + Delta_GHG_im_row_9_S2
+
+
+
+Delta_GHG_tot_row_S2 = Delta_GHG_tot_ex_S2 + Delta_GHG_tot_im_S2
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S2=cumsum(Delta_GHG_1_row_S2)
+Delta_GHG_2_cusum_row_S2=cumsum(Delta_GHG_2_row_S2)
+Delta_GHG_3_cusum_row_S2=cumsum(Delta_GHG_3_row_S2)
+Delta_GHG_4_cusum_row_S2=cumsum(Delta_GHG_4_row_S2)
+Delta_GHG_5_cusum_row_S2=cumsum(Delta_GHG_5_row_S2)
+Delta_GHG_6_cusum_row_S2=cumsum(Delta_GHG_6_row_S2)
+Delta_GHG_7_cusum_row_S2=cumsum(Delta_GHG_7_row_S2)
+Delta_GHG_8_cusum_row_S2=cumsum(Delta_GHG_8_row_S2)
+Delta_GHG_9_cusum_row_S2=cumsum(Delta_GHG_9_row_S2)
+
+Delta_GHG_tot_cusum_row_S2=cumsum(Delta_GHG_tot_row_S2)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S2= Exo_model_S2$simulation$Co2E_1/1000 - Exo_model$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S2= Exo_model_S2$simulation$Co2E_2/1000 - Exo_model$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S2= Exo_model_S2$simulation$Co2E_3/1000 - Exo_model$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S2= Exo_model_S2$simulation$Co2E_4/1000 - Exo_model$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S2= Exo_model_S2$simulation$Co2E_5/1000 - Exo_model$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S2= Exo_model_S2$simulation$Co2E_6/1000 - Exo_model$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S2= Exo_model_S2$simulation$Co2E_7/1000 - Exo_model$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S2= Exo_model_S2$simulation$Co2E_8/1000 - Exo_model$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S2= Exo_model_S2$simulation$Co2E_9/1000 - Exo_model$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S2= Exo_model_S2$simulation$Co2E_HH/1000 - Exo_model$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S2 =Exo_model_S2$simulation$Co2E_tot/1000 - Exo_model$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S2=cumsum(Delta_GHG_tot_DK_S2)
+```
+
+### S3
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S3_Delta= Exo_model_S3$simulation$exk_1*1000 - Exo_model$simulation$exk_1*1000 
+exk_2_tot_S3_Delta= Exo_model_S3$simulation$exk_2*1000 - Exo_model$simulation$exk_2*1000
+exk_3_tot_S3_Delta= Exo_model_S3$simulation$exk_3*1000 - Exo_model$simulation$exk_3*1000
+exk_4_tot_S3_Delta= Exo_model_S3$simulation$exk_4*1000 - Exo_model$simulation$exk_4*1000
+exk_5_tot_S3_Delta= Exo_model_S3$simulation$exk_5*1000 - Exo_model$simulation$exk_5*1000
+exk_6_tot_S3_Delta= Exo_model_S3$simulation$exk_6*1000 - Exo_model$simulation$exk_6*1000
+exk_7_tot_S3_Delta= Exo_model_S3$simulation$exk_7*1000 - Exo_model$simulation$exk_7*1000
+exk_8_tot_S3_Delta= Exo_model_S3$simulation$exk_8*1000 - Exo_model$simulation$exk_8*1000
+exk_9_tot_S3_Delta= Exo_model_S3$simulation$exk_9*1000 - Exo_model$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S3= exk_1_tot_S3_Delta*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S3= exk_2_tot_S3_Delta*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S3= exk_3_tot_S3_Delta*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S3= exk_4_tot_S3_Delta*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S3= exk_5_tot_S3_Delta*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S3= exk_6_tot_S3_Delta*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S3= exk_7_tot_S3_Delta*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S3= exk_8_tot_S3_Delta*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S3= exk_9_tot_S3_Delta*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S3=Delta_GHG_ex_row_1_S3 + Delta_GHG_ex_row_2_S3 + Delta_GHG_ex_row_3_S3 + Delta_GHG_ex_row_4_S3 + Delta_GHG_ex_row_5_S3 + Delta_GHG_ex_row_6_S3 + Delta_GHG_ex_row_7_S3 + Delta_GHG_ex_row_8_S3 + Delta_GHG_ex_row_9_S3
+
+# Carbon leakage through imports
+
+imk_1_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_1*1000 - Exo_model$simulation$Xk_im_1*1000
+imk_2_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_2*1000 - Exo_model$simulation$Xk_im_2*1000
+imk_3_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_3*1000 - Exo_model$simulation$Xk_im_3*1000
+imk_4_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_4*1000 - Exo_model$simulation$Xk_im_4*1000
+imk_5_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_5*1000 - Exo_model$simulation$Xk_im_5*1000
+imk_6_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_6*1000 - Exo_model$simulation$Xk_im_6*1000
+imk_7_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_7*1000 - Exo_model$simulation$Xk_im_7*1000
+imk_8_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_8*1000 - Exo_model$simulation$Xk_im_8*1000
+imk_9_tot_S3_Delta= Exo_model_S3$simulation$Xk_im_9*1000 - Exo_model$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S3= imk_1_tot_S3_Delta*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S3= imk_2_tot_S3_Delta*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S3= imk_3_tot_S3_Delta*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S3= imk_4_tot_S3_Delta*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S3= imk_5_tot_S3_Delta*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S3= imk_6_tot_S3_Delta*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S3= imk_7_tot_S3_Delta*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S3= imk_8_tot_S3_Delta*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S3= imk_9_tot_S3_Delta*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S3=Delta_GHG_im_row_1_S3 + Delta_GHG_im_row_2_S3 + Delta_GHG_im_row_3_S3 + Delta_GHG_im_row_4_S3 + Delta_GHG_im_row_5_S3 + Delta_GHG_im_row_6_S3 + Delta_GHG_im_row_7_S3  + Delta_GHG_im_row_8_S3 + Delta_GHG_im_row_9_S3
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S3 = Delta_GHG_ex_row_1_S3 + Delta_GHG_im_row_1_S3
+Delta_GHG_2_row_S3 = Delta_GHG_ex_row_2_S3 + Delta_GHG_im_row_2_S3
+Delta_GHG_3_row_S3 = Delta_GHG_ex_row_3_S3 + Delta_GHG_im_row_3_S3
+Delta_GHG_4_row_S3 = Delta_GHG_ex_row_4_S3 + Delta_GHG_im_row_4_S3
+Delta_GHG_5_row_S3 = Delta_GHG_ex_row_5_S3 + Delta_GHG_im_row_5_S3
+Delta_GHG_6_row_S3 = Delta_GHG_ex_row_6_S3 + Delta_GHG_im_row_6_S3
+Delta_GHG_7_row_S3 = Delta_GHG_ex_row_7_S3 + Delta_GHG_im_row_7_S3
+Delta_GHG_8_row_S3 = Delta_GHG_ex_row_8_S3 + Delta_GHG_im_row_8_S3
+Delta_GHG_9_row_S3 = Delta_GHG_ex_row_9_S3 + Delta_GHG_im_row_9_S3
+
+
+
+Delta_GHG_tot_row_S3 = Delta_GHG_tot_ex_S3 + Delta_GHG_tot_im_S3
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S3=cumsum(Delta_GHG_1_row_S3)
+Delta_GHG_2_cusum_row_S3=cumsum(Delta_GHG_2_row_S3)
+Delta_GHG_3_cusum_row_S3=cumsum(Delta_GHG_3_row_S3)
+Delta_GHG_4_cusum_row_S3=cumsum(Delta_GHG_4_row_S3)
+Delta_GHG_5_cusum_row_S3=cumsum(Delta_GHG_5_row_S3)
+Delta_GHG_6_cusum_row_S3=cumsum(Delta_GHG_6_row_S3)
+Delta_GHG_7_cusum_row_S3=cumsum(Delta_GHG_7_row_S3)
+Delta_GHG_8_cusum_row_S3=cumsum(Delta_GHG_8_row_S3)
+Delta_GHG_9_cusum_row_S3=cumsum(Delta_GHG_9_row_S3)
+
+Delta_GHG_tot_cusum_row_S3=cumsum(Delta_GHG_tot_row_S3)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S3= Exo_model_S3$simulation$Co2E_1/1000 - Exo_model$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S3= Exo_model_S3$simulation$Co2E_2/1000 - Exo_model$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S3= Exo_model_S3$simulation$Co2E_3/1000 - Exo_model$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S3= Exo_model_S3$simulation$Co2E_4/1000 - Exo_model$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S3= Exo_model_S3$simulation$Co2E_5/1000 - Exo_model$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S3= Exo_model_S3$simulation$Co2E_6/1000 - Exo_model$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S3= Exo_model_S3$simulation$Co2E_7/1000 - Exo_model$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S3= Exo_model_S3$simulation$Co2E_8/1000 - Exo_model$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S3= Exo_model_S3$simulation$Co2E_9/1000 - Exo_model$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S3= Exo_model_S3$simulation$Co2E_HH/1000 - Exo_model$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S3 =Exo_model_S3$simulation$Co2E_tot/1000 - Exo_model$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S3=cumsum(Delta_GHG_tot_DK_S3)
+```
+
+
+
+### S4
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S4_Delta= Exo_model_S4$simulation$exk_1*1000 - Exo_model$simulation$exk_1*1000 
+exk_2_tot_S4_Delta= Exo_model_S4$simulation$exk_2*1000 - Exo_model$simulation$exk_2*1000
+exk_3_tot_S4_Delta= Exo_model_S4$simulation$exk_3*1000 - Exo_model$simulation$exk_3*1000
+exk_4_tot_S4_Delta= Exo_model_S4$simulation$exk_4*1000 - Exo_model$simulation$exk_4*1000
+exk_5_tot_S4_Delta= Exo_model_S4$simulation$exk_5*1000 - Exo_model$simulation$exk_5*1000
+exk_6_tot_S4_Delta= Exo_model_S4$simulation$exk_6*1000 - Exo_model$simulation$exk_6*1000
+exk_7_tot_S4_Delta= Exo_model_S4$simulation$exk_7*1000 - Exo_model$simulation$exk_7*1000
+exk_8_tot_S4_Delta= Exo_model_S4$simulation$exk_8*1000 - Exo_model$simulation$exk_8*1000
+exk_9_tot_S4_Delta= Exo_model_S4$simulation$exk_9*1000 - Exo_model$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S4= exk_1_tot_S4_Delta*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S4= exk_2_tot_S4_Delta*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S4= exk_3_tot_S4_Delta*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S4= exk_4_tot_S4_Delta*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S4= exk_5_tot_S4_Delta*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S4= exk_6_tot_S4_Delta*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S4= exk_7_tot_S4_Delta*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S4= exk_8_tot_S4_Delta*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S4= exk_9_tot_S4_Delta*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S4=Delta_GHG_ex_row_1_S4 + Delta_GHG_ex_row_2_S4 + Delta_GHG_ex_row_3_S4 + Delta_GHG_ex_row_4_S4 + Delta_GHG_ex_row_5_S4 + Delta_GHG_ex_row_6_S4 + Delta_GHG_ex_row_7_S4 + Delta_GHG_ex_row_8_S4 + Delta_GHG_ex_row_9_S4
+
+# Carbon leakage through imports
+
+imk_1_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_1*1000 - Exo_model$simulation$Xk_im_1*1000
+imk_2_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_2*1000 - Exo_model$simulation$Xk_im_2*1000
+imk_3_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_3*1000 - Exo_model$simulation$Xk_im_3*1000
+imk_4_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_4*1000 - Exo_model$simulation$Xk_im_4*1000
+imk_5_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_5*1000 - Exo_model$simulation$Xk_im_5*1000
+imk_6_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_6*1000 - Exo_model$simulation$Xk_im_6*1000
+imk_7_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_7*1000 - Exo_model$simulation$Xk_im_7*1000
+imk_8_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_8*1000 - Exo_model$simulation$Xk_im_8*1000
+imk_9_tot_S4_Delta= Exo_model_S4$simulation$Xk_im_9*1000 - Exo_model$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S4= imk_1_tot_S4_Delta*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S4= imk_2_tot_S4_Delta*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S4= imk_3_tot_S4_Delta*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S4= imk_4_tot_S4_Delta*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S4= imk_5_tot_S4_Delta*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S4= imk_6_tot_S4_Delta*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S4= imk_7_tot_S4_Delta*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S4= imk_8_tot_S4_Delta*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S4= imk_9_tot_S4_Delta*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S4=Delta_GHG_im_row_1_S4 + Delta_GHG_im_row_2_S4 + Delta_GHG_im_row_3_S4 + Delta_GHG_im_row_4_S4 + Delta_GHG_im_row_5_S4 + Delta_GHG_im_row_6_S4 + Delta_GHG_im_row_7_S4  + Delta_GHG_im_row_8_S4 + Delta_GHG_im_row_9_S4
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S4 = Delta_GHG_ex_row_1_S4 + Delta_GHG_im_row_1_S4
+Delta_GHG_2_row_S4 = Delta_GHG_ex_row_2_S4 + Delta_GHG_im_row_2_S4
+Delta_GHG_3_row_S4 = Delta_GHG_ex_row_3_S4 + Delta_GHG_im_row_3_S4
+Delta_GHG_4_row_S4 = Delta_GHG_ex_row_4_S4 + Delta_GHG_im_row_4_S4
+Delta_GHG_5_row_S4 = Delta_GHG_ex_row_5_S4 + Delta_GHG_im_row_5_S4
+Delta_GHG_6_row_S4 = Delta_GHG_ex_row_6_S4 + Delta_GHG_im_row_6_S4
+Delta_GHG_7_row_S4 = Delta_GHG_ex_row_7_S4 + Delta_GHG_im_row_7_S4
+Delta_GHG_8_row_S4 = Delta_GHG_ex_row_8_S4 + Delta_GHG_im_row_8_S4
+Delta_GHG_9_row_S4 = Delta_GHG_ex_row_9_S4 + Delta_GHG_im_row_9_S4
+
+
+
+Delta_GHG_tot_row_S4 = Delta_GHG_tot_ex_S4 + Delta_GHG_tot_im_S4
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S4=cumsum(Delta_GHG_1_row_S4)
+Delta_GHG_2_cusum_row_S4=cumsum(Delta_GHG_2_row_S4)
+Delta_GHG_3_cusum_row_S4=cumsum(Delta_GHG_3_row_S4)
+Delta_GHG_4_cusum_row_S4=cumsum(Delta_GHG_4_row_S4)
+Delta_GHG_5_cusum_row_S4=cumsum(Delta_GHG_5_row_S4)
+Delta_GHG_6_cusum_row_S4=cumsum(Delta_GHG_6_row_S4)
+Delta_GHG_7_cusum_row_S4=cumsum(Delta_GHG_7_row_S4)
+Delta_GHG_8_cusum_row_S4=cumsum(Delta_GHG_8_row_S4)
+Delta_GHG_9_cusum_row_S4=cumsum(Delta_GHG_9_row_S4)
+
+Delta_GHG_tot_cusum_row_S4=cumsum(Delta_GHG_tot_row_S4)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S4= Exo_model_S4$simulation$Co2E_1/1000 - Exo_model$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S4= Exo_model_S4$simulation$Co2E_2/1000 - Exo_model$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S4= Exo_model_S4$simulation$Co2E_3/1000 - Exo_model$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S4= Exo_model_S4$simulation$Co2E_4/1000 - Exo_model$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S4= Exo_model_S4$simulation$Co2E_5/1000 - Exo_model$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S4= Exo_model_S4$simulation$Co2E_6/1000 - Exo_model$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S4= Exo_model_S4$simulation$Co2E_7/1000 - Exo_model$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S4= Exo_model_S4$simulation$Co2E_8/1000 - Exo_model$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S4= Exo_model_S4$simulation$Co2E_9/1000 - Exo_model$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S4= Exo_model_S4$simulation$Co2E_HH/1000 - Exo_model$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S4 =Exo_model_S4$simulation$Co2E_tot/1000 - Exo_model$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S4=cumsum(Delta_GHG_tot_DK_S4)
+```
+
+
+## Leakage rates
+
+
+```{r}
+
+
+Delta_GHG_tot_cusum_row_S1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S2=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S3=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S4=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4), START = c(2015,1),FREQ=1)
+
+Delta_GHG_tot_cusum_DK_S1=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S1), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S2=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S2), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S3=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S3), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S4=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S4), START = c(2015,1),FREQ=1)
+
+Delta_GHG_tot_cusum_world_S1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1+Delta_GHG_tot_cusum_DK_S1), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S2=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2+Delta_GHG_tot_cusum_DK_S2), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S3=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3+Delta_GHG_tot_cusum_DK_S3), START = c(2015,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S4=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4+Delta_GHG_tot_cusum_DK_S4), START = c(2015,1),FREQ=1)
+
+Leak_rate_tot_S1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S1/Delta_GHG_tot_cusum_DK_S1), START = c(2015,1),FREQ=1)
+Leak_rate_tot_S2=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S2/Delta_GHG_tot_cusum_DK_S2), START = c(2015,1),FREQ=1)
+Leak_rate_tot_S3=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S3/Delta_GHG_tot_cusum_DK_S3), START = c(2015,1),FREQ=1)
+Leak_rate_tot_S4=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S4/Delta_GHG_tot_cusum_DK_S4), START = c(2015,1),FREQ=1)
+```
+
+
+## Environmental sacrifice ratio:
+
+We start by calculating the dynamic change in output:
+
+```{r}
+
+Delta_GDP_tot_cusum_DK_S1=cumsum(Exo_model_S1$simulation$yk*1000000000 - Exo_model$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S2=cumsum(Exo_model_S2$simulation$yk*1000000000 - Exo_model$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S3=cumsum(Exo_model_S3$simulation$yk*1000000000 - Exo_model$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S4=cumsum(Exo_model_S4$simulation$yk*1000000000 - Exo_model$simulation$yk*1000000000)
+
+Delta_GDP_tot_cusum_DK_S1=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S1), START = c(2015,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S2=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S2), START = c(2015,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S3=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S3), START = c(2015,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S4=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S4), START = c(2015,1),FREQ=1)
+
+Shadow_price_DK_S1= Delta_GDP_tot_cusum_DK_S1/Delta_GHG_tot_cusum_DK_S1
+Shadow_price_DK_S2= Delta_GDP_tot_cusum_DK_S2/Delta_GHG_tot_cusum_DK_S2
+Shadow_price_DK_S3= Delta_GDP_tot_cusum_DK_S3/Delta_GHG_tot_cusum_DK_S3
+Shadow_price_DK_S4= Delta_GDP_tot_cusum_DK_S4/Delta_GHG_tot_cusum_DK_S4
+
+Shadow_price_World_S1= Delta_GDP_tot_cusum_DK_S1/Delta_GHG_tot_cusum_world_S1
+Shadow_price_World_S2= Delta_GDP_tot_cusum_DK_S2/Delta_GHG_tot_cusum_world_S2
+Shadow_price_World_S3= Delta_GDP_tot_cusum_DK_S3/Delta_GHG_tot_cusum_world_S3
+Shadow_price_World_S4= Delta_GDP_tot_cusum_DK_S4/Delta_GHG_tot_cusum_world_S4
+
+```
+
+
+# Plots used in paper:
+
+
+**Figure 4: Gross Domestic Product and aggregate demand components**
+
+```{r, fig.width=20, fig.height=12}
+
+par(mfrow=c(2,3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+# Apply the theme
+theme_journal()
+
+
+plot(window((Exo_model_S1$simulation$yk - Exo_model$simulation$yk)/Exo_model$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Real GDP" ,ylim= c(-0.6,0.2), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$yk - Exo_model$simulation$yk)/Exo_model$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$pconk - Exo_model$simulation$pconk)/Exo_model$simulation$pconk*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Real Consumption" , ylim= c(-0.6,0.4), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$pconk - Exo_model$simulation$pconk)/Exo_model$simulation$pconk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$ik - Exo_model$simulation$ik)/Exo_model$simulation$ik*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Real Investment" , ylim= c(-1.2,0.9), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$ik - Exo_model$simulation$ik)/Exo_model$simulation$ik*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$xk - Exo_model$simulation$xk)/Exo_model$simulation$xk*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Real Exports" , ylim= c(-1,0.5), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$xk - Exo_model$simulation$xk)/Exo_model$simulation$xk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$imk - Exo_model$simulation$imk)/Exo_model$simulation$imk*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Real Imports" , ylim= c(-0.6,0.5), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$imk - Exo_model$simulation$imk)/Exo_model$simulation$imk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$Co2E_tot - Exo_model$simulation$Co2E_tot)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "CO2E Emissions" , ylim= c(-2.4,0.5), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$Co2E_tot - Exo_model$simulation$Co2E_tot)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+
+
+# Adding a collective title for both plots
+mtext("GDP and aggregate demand components", side = 3, outer = TRUE, line = 1, cex = 1.7)
+
+```
+
+
+
+
+**Figure 5: Effect on consumer prices and consumption as a production or consumer tax is implemented.**
+
+```{r, fig.width=15, fig.height=13}
+
+par(mfrow = c(3, 2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+theme_journal()
+
+
+
+plot(window((Exo_model_S1$simulation$pconk - Exo_model$simulation$pconk)/Exo_model$simulation$pconk*100,start= c(2020,1)), col= "black", ylab= "Percentage change from baseline" , main= "Real consumption & Consumer prices: Scenario 1 (Consumption tax)" , lwd=3, ylim= c(-0.45,0.5), xlab="", cex.main=1.5);
+lines(window((Exo_model_S1$simulation$ppcon_tax - Exo_model$simulation$ppcon_tax)/Exo_model$simulation$ppcon_tax*100,start= c(2020,1)), col = "red", lwd=3, xlab="");legend("bottomleft",legend=c("Aggregate nominal consumption", "Consumer price index"),lty=c(1,1),lwd=c(2),bty="n", col = c("black","red"),cex=1.2);grid()
+
+
+plot(window((Exo_model_S2$simulation$pconk - Exo_model$simulation$pconk)/Exo_model$simulation$pconk*100,start= c(2020,1)), col= "black", ylab= "Percentage change from baseline" , main= "Real consumption & Consumer prices: Scenario 2 (Production tax)" , lwd=3, ylim= c(-0.45,0.2), xlab="", cex.main=1.5);
+lines(window((Exo_model_S2$simulation$ppcon_tax - Exo_model$simulation$ppcon_tax)/Exo_model$simulation$ppcon_tax*100,start= c(2020,1)), col = "red", lwd=3, xlab="");legend("bottomleft",legend=c("Aggregate nominal consumption", "Consumer price index"),lty=c(1,1),lwd=c(2),bty="n", col = c("black","red"),cex=1.2);grid()
+
+
+plot(window((Exo_model_S1$simulation$ppcon_oth_tot_tax - Exo_model$simulation$ppcon_oth_tot_tax)*100,start= c(2020,1)), ylim=c(-0,16),col= "red", ylab= "Change in percentage points from baseline" , main= "Consumer prices: Scenario 1 (Consumption tax)", lwd=3, xlab="", cex.main=1.5);
+lines(window((Exo_model_S1$simulation$ppcon_110_tot_tax - Exo_model$simulation$ppcon_110_tot_tax)*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S1$simulation$ppcon_120_tot_tax - Exo_model$simulation$ppcon_120_tot_tax)*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ppcon_130_tot_tax - Exo_model$simulation$ppcon_130_tot_tax)*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ppcon_140_tot_tax - Exo_model$simulation$ppcon_140_tot_tax)*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ppcon_160_tot_tax - Exo_model$simulation$ppcon_160_tot_tax)*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ppcon_180_tot_tax - Exo_model$simulation$ppcon_180_tot_tax)*100,start= c(2020,1)), col = "pink", lwd=3 , xlab="");legend("topleft",legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink"), cex=1.2); grid()
+
+
+plot(window((Exo_model_S2$simulation$ppcon_oth_tot_tax - Exo_model$simulation$ppcon_oth_tot_tax)*100,start= c(2020,1)), ylim=c(-0.5,1.2),col= "red", ylab= "Change in percentage points from baseline" , main= "Consumer prices: Scenario 2 (Production tax)", lwd=3, xlab="", cex.main=1.5);
+lines(window((Exo_model_S2$simulation$ppcon_110_tot_tax - Exo_model$simulation$ppcon_110_tot_tax)*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S2$simulation$ppcon_120_tot_tax - Exo_model$simulation$ppcon_120_tot_tax)*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ppcon_130_tot_tax - Exo_model$simulation$ppcon_130_tot_tax)*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ppcon_140_tot_tax - Exo_model$simulation$ppcon_140_tot_tax)*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ppcon_160_tot_tax - Exo_model$simulation$ppcon_160_tot_tax)*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ppcon_180_tot_tax - Exo_model$simulation$ppcon_180_tot_tax)*100,start= c(2020,1)), col = "pink", lwd=3 , xlab="");legend("topleft",legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink"), cex=1.2); grid()
+
+
+
+plot(window((Exo_model_S1$simulation$ck_oth_tot - Exo_model$simulation$ck_oth_tot)/Exo_model$simulation$ck_oth_tot*100,start= c(2020,1)), ylim=c(-10,3),col= "red", ylab= "Percentage change from baseline" , main= "Real consumptions: Scenario 1 (Consumption tax)", lwd=3, xlab="", cex.main=1.5);
+lines(window((Exo_model_S1$simulation$ck_110_tot - Exo_model$simulation$ck_110_tot)/Exo_model$simulation$ck_110_tot*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S1$simulation$ck_120_tot - Exo_model$simulation$ck_120_tot)/Exo_model$simulation$ck_120_tot*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ck_130_tot - Exo_model$simulation$ck_130_tot)/Exo_model$simulation$ck_130_tot*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ck_140_tot - Exo_model$simulation$ck_140_tot)/Exo_model$simulation$ck_140_tot*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ck_160_tot - Exo_model$simulation$ck_160_tot)/Exo_model$simulation$ck_160_tot*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$ck_180_tot - Exo_model$simulation$ck_180_tot)/Exo_model$simulation$ck_180_tot*100,start= c(2020,1)), col = "pink", lwd=3 , xlab=""); legend("bottomleft",legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Diary consumption","Fruit and vegetable consumption","Other food consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink"), cex=1.2); grid()
+
+
+
+plot(window((Exo_model_S2$simulation$ck_oth_tot - Exo_model$simulation$ck_oth_tot)/Exo_model$simulation$ck_oth_tot*100,start= c(2020,1)), ylim=c(-1,0.5),col= "red", ylab= "Percentage change from baseline" , main= "Real consumptions: Scenario 2 (Production tax)", lwd=3, xlab="", cex.main=1.5);
+lines(window((Exo_model_S2$simulation$ck_110_tot - Exo_model$simulation$ck_110_tot)/Exo_model$simulation$ck_110_tot*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S2$simulation$ck_120_tot - Exo_model$simulation$ck_120_tot)/Exo_model$simulation$ck_120_tot*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ck_130_tot - Exo_model$simulation$ck_130_tot)/Exo_model$simulation$ck_130_tot*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ck_140_tot - Exo_model$simulation$ck_140_tot)/Exo_model$simulation$ck_140_tot*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ck_160_tot - Exo_model$simulation$ck_160_tot)/Exo_model$simulation$ck_160_tot*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$ck_180_tot - Exo_model$simulation$ck_180_tot)/Exo_model$simulation$ck_180_tot*100,start= c(2020,1)), col = "pink", lwd=3 , xlab=""); legend("bottomleft",legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Diary consumption","Fruit and vegetable consumption","Other food consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink"), cex=1.2); grid()
+
+
+# Adding a collective title for both plots
+mtext("Consumption & Consumer prices", side = 3, outer = TRUE, line = 1, cex = 1.5)
+
+```
+
+
+
+
+
+Before creating the next figure, we need to calculate some additional variables.
+
+
+**Baseline**
+```{r}
+
+#### Industry 1
+z_dom_1_tot_BS = Exo_model$simulation$z_dom_11 + Exo_model$simulation$z_dom_21 + Exo_model$simulation$z_dom_31 + Exo_model$simulation$z_dom_41 + Exo_model$simulation$z_dom_51 + Exo_model$simulation$z_dom_61 + Exo_model$simulation$z_dom_71 + Exo_model$simulation$z_dom_81 + Exo_model$simulation$z_dom_91
+
+zk_dom_1_tot_BS = Exo_model$simulation$zk_dom_11 + Exo_model$simulation$zk_dom_21 + Exo_model$simulation$zk_dom_31 + Exo_model$simulation$zk_dom_41 + Exo_model$simulation$zk_dom_51 + Exo_model$simulation$zk_dom_61 + Exo_model$simulation$zk_dom_71 + Exo_model$simulation$zk_dom_81 + Exo_model$simulation$zk_dom_91
+
+z_im_1_tot_BS = Exo_model$simulation$z_im_11 + Exo_model$simulation$z_im_21 + Exo_model$simulation$z_im_31 + Exo_model$simulation$z_im_41 + Exo_model$simulation$z_im_51 + Exo_model$simulation$z_im_61 + Exo_model$simulation$z_im_71 + Exo_model$simulation$z_im_81 + Exo_model$simulation$z_im_91 + Exo_model$simulation$z_im_un_1
+
+zk_im_1_tot_BS = Exo_model$simulation$zk_im_11 + Exo_model$simulation$zk_im_21 + Exo_model$simulation$zk_im_31 + Exo_model$simulation$zk_im_41 + Exo_model$simulation$zk_im_51 + Exo_model$simulation$zk_im_61 + Exo_model$simulation$zk_im_71 + Exo_model$simulation$zk_im_81 + Exo_model$simulation$zk_im_91 + Exo_model$simulation$zk_im_un_1
+
+z_1_tot_BS = z_dom_1_tot_BS + z_im_1_tot_BS
+
+zk_1_tot_BS = zk_dom_1_tot_BS + zk_im_1_tot_BS
+
+
+
+#### Industry 2
+z_dom_2_tot_BS = Exo_model$simulation$z_dom_12 + Exo_model$simulation$z_dom_22 + Exo_model$simulation$z_dom_32 + Exo_model$simulation$z_dom_42 + Exo_model$simulation$z_dom_52 + Exo_model$simulation$z_dom_62 + Exo_model$simulation$z_dom_72 + Exo_model$simulation$z_dom_82 + Exo_model$simulation$z_dom_92
+
+zk_dom_2_tot_BS = Exo_model$simulation$zk_dom_12 + Exo_model$simulation$zk_dom_22 + Exo_model$simulation$zk_dom_32 + Exo_model$simulation$zk_dom_42 + Exo_model$simulation$zk_dom_52 + Exo_model$simulation$zk_dom_62 + Exo_model$simulation$zk_dom_72 + Exo_model$simulation$zk_dom_82 + Exo_model$simulation$zk_dom_92
+
+z_im_2_tot_BS = Exo_model$simulation$z_im_12 + Exo_model$simulation$z_im_22 + Exo_model$simulation$z_im_32 + Exo_model$simulation$z_im_42 + Exo_model$simulation$z_im_52 + Exo_model$simulation$z_im_62 + Exo_model$simulation$z_im_72 + Exo_model$simulation$z_im_82 + Exo_model$simulation$z_im_92 + Exo_model$simulation$z_im_un_2
+
+zk_im_2_tot_BS = Exo_model$simulation$zk_im_12 + Exo_model$simulation$zk_im_22 + Exo_model$simulation$zk_im_32 + Exo_model$simulation$zk_im_42 + Exo_model$simulation$zk_im_52 + Exo_model$simulation$zk_im_62 + Exo_model$simulation$zk_im_72 + Exo_model$simulation$zk_im_82  + Exo_model$simulation$zk_im_92  + Exo_model$simulation$zk_im_un_2
+
+z_2_tot_BS = z_dom_2_tot_BS + z_im_2_tot_BS
+
+zk_2_tot_BS = zk_dom_2_tot_BS + zk_im_2_tot_BS
+
+
+
+#### Industry 3
+z_dom_3_tot_BS = Exo_model$simulation$z_dom_13 + Exo_model$simulation$z_dom_23 + Exo_model$simulation$z_dom_33 + Exo_model$simulation$z_dom_43 + Exo_model$simulation$z_dom_53 + Exo_model$simulation$z_dom_63 + Exo_model$simulation$z_dom_73 + Exo_model$simulation$z_dom_83 + Exo_model$simulation$z_dom_93
+
+zk_dom_3_tot_BS = Exo_model$simulation$zk_dom_13 + Exo_model$simulation$zk_dom_23 + Exo_model$simulation$zk_dom_33 + Exo_model$simulation$zk_dom_43 + Exo_model$simulation$zk_dom_53 + Exo_model$simulation$zk_dom_63 + Exo_model$simulation$zk_dom_73 + Exo_model$simulation$zk_dom_83 + Exo_model$simulation$zk_dom_93
+
+z_im_3_tot_BS = Exo_model$simulation$z_im_13 + Exo_model$simulation$z_im_23 + Exo_model$simulation$z_im_33 + Exo_model$simulation$z_im_43 + Exo_model$simulation$z_im_53 + Exo_model$simulation$z_im_63 + Exo_model$simulation$z_im_73 + Exo_model$simulation$z_im_83 + Exo_model$simulation$z_im_93 + Exo_model$simulation$z_im_un_3
+
+zk_im_3_tot_BS = Exo_model$simulation$zk_im_13 + Exo_model$simulation$zk_im_23 + Exo_model$simulation$zk_im_33 + Exo_model$simulation$zk_im_43 + Exo_model$simulation$zk_im_53 + Exo_model$simulation$zk_im_63 + Exo_model$simulation$zk_im_73 + Exo_model$simulation$zk_im_83 + Exo_model$simulation$zk_im_93 + Exo_model$simulation$zk_im_un_3
+
+z_3_tot_BS = z_dom_3_tot_BS + z_im_3_tot_BS
+
+zk_3_tot_BS = zk_dom_3_tot_BS + zk_im_3_tot_BS
+
+
+
+#### Industry 4
+z_dom_4_tot_BS = Exo_model$simulation$z_dom_14 + Exo_model$simulation$z_dom_24 + Exo_model$simulation$z_dom_34 + Exo_model$simulation$z_dom_44 + Exo_model$simulation$z_dom_54 + Exo_model$simulation$z_dom_64 + Exo_model$simulation$z_dom_74 + Exo_model$simulation$z_dom_84 + Exo_model$simulation$z_dom_94
+
+zk_dom_4_tot_BS = Exo_model$simulation$zk_dom_14 + Exo_model$simulation$zk_dom_24 + Exo_model$simulation$zk_dom_34 + Exo_model$simulation$zk_dom_44 + Exo_model$simulation$zk_dom_54 + Exo_model$simulation$zk_dom_64 + Exo_model$simulation$zk_dom_74 + Exo_model$simulation$zk_dom_84 + Exo_model$simulation$zk_dom_94
+
+z_im_4_tot_BS = Exo_model$simulation$z_im_14 + Exo_model$simulation$z_im_24 + Exo_model$simulation$z_im_34 + Exo_model$simulation$z_im_44 + Exo_model$simulation$z_im_54 + Exo_model$simulation$z_im_64 + Exo_model$simulation$z_im_74 + Exo_model$simulation$z_im_84 + Exo_model$simulation$z_im_94 + Exo_model$simulation$z_im_un_4
+
+zk_im_4_tot_BS = Exo_model$simulation$zk_im_14 + Exo_model$simulation$zk_im_24 + Exo_model$simulation$zk_im_34 + Exo_model$simulation$zk_im_44 + Exo_model$simulation$zk_im_54 + Exo_model$simulation$zk_im_64 + Exo_model$simulation$zk_im_74 + Exo_model$simulation$zk_im_84 + Exo_model$simulation$zk_im_94 + Exo_model$simulation$zk_im_un_4
+
+z_4_tot_BS = z_dom_4_tot_BS + z_im_4_tot_BS
+
+zk_4_tot_BS = zk_dom_4_tot_BS + zk_im_4_tot_BS
+
+
+
+#### Industry 5
+z_dom_5_tot_BS = Exo_model$simulation$z_dom_15 + Exo_model$simulation$z_dom_25 + Exo_model$simulation$z_dom_35 + Exo_model$simulation$z_dom_45 + Exo_model$simulation$z_dom_55 + Exo_model$simulation$z_dom_65 + Exo_model$simulation$z_dom_75 + Exo_model$simulation$z_dom_85 + Exo_model$simulation$z_dom_95
+
+zk_dom_5_tot_BS = Exo_model$simulation$zk_dom_15 + Exo_model$simulation$zk_dom_25 + Exo_model$simulation$zk_dom_35 + Exo_model$simulation$zk_dom_45 + Exo_model$simulation$zk_dom_55 + Exo_model$simulation$zk_dom_65 + Exo_model$simulation$zk_dom_75 + Exo_model$simulation$zk_dom_85 + Exo_model$simulation$zk_dom_95
+
+z_im_5_tot_BS = Exo_model$simulation$z_im_15 + Exo_model$simulation$z_im_25 + Exo_model$simulation$z_im_35 + Exo_model$simulation$z_im_45 + Exo_model$simulation$z_im_55 + Exo_model$simulation$z_im_65 + Exo_model$simulation$z_im_75 + Exo_model$simulation$z_im_85 + Exo_model$simulation$z_im_95 + Exo_model$simulation$z_im_un_5
+
+zk_im_5_tot_BS = Exo_model$simulation$zk_im_15 + Exo_model$simulation$zk_im_25 + Exo_model$simulation$zk_im_35 + Exo_model$simulation$zk_im_45 + Exo_model$simulation$zk_im_55 + Exo_model$simulation$zk_im_65 + Exo_model$simulation$zk_im_75 + Exo_model$simulation$zk_im_85 + Exo_model$simulation$zk_im_95 + Exo_model$simulation$zk_im_un_5
+
+z_5_tot_BS = z_dom_5_tot_BS + z_im_5_tot_BS
+
+zk_5_tot_BS = zk_dom_5_tot_BS + zk_im_5_tot_BS
+
+
+
+#### Industry 6
+z_dom_6_tot_BS = Exo_model$simulation$z_dom_16 + Exo_model$simulation$z_dom_26 + Exo_model$simulation$z_dom_36 + Exo_model$simulation$z_dom_46 + Exo_model$simulation$z_dom_56 + Exo_model$simulation$z_dom_66 + Exo_model$simulation$z_dom_76 + Exo_model$simulation$z_dom_86 + Exo_model$simulation$z_dom_96
+
+zk_dom_6_tot_BS = Exo_model$simulation$zk_dom_16 + Exo_model$simulation$zk_dom_26 + Exo_model$simulation$zk_dom_36 + Exo_model$simulation$zk_dom_46 + Exo_model$simulation$zk_dom_56 + Exo_model$simulation$zk_dom_66 + Exo_model$simulation$zk_dom_76 + Exo_model$simulation$zk_dom_86 + Exo_model$simulation$zk_dom_96
+
+z_im_6_tot_BS = Exo_model$simulation$z_im_16 + Exo_model$simulation$z_im_26 + Exo_model$simulation$z_im_36 + Exo_model$simulation$z_im_46 + Exo_model$simulation$z_im_56 + Exo_model$simulation$z_im_66 + Exo_model$simulation$z_im_76 + Exo_model$simulation$z_im_86 + Exo_model$simulation$z_im_96 + Exo_model$simulation$z_im_un_6
+
+zk_im_6_tot_BS = Exo_model$simulation$zk_im_16 + Exo_model$simulation$zk_im_26 + Exo_model$simulation$zk_im_36 + Exo_model$simulation$zk_im_46 + Exo_model$simulation$zk_im_56 + Exo_model$simulation$zk_im_66 + Exo_model$simulation$zk_im_76 + Exo_model$simulation$zk_im_86 + Exo_model$simulation$zk_im_96 + Exo_model$simulation$zk_im_un_6
+
+z_6_tot_BS = z_dom_6_tot_BS + z_im_6_tot_BS
+
+zk_6_tot_BS = zk_dom_6_tot_BS + zk_im_6_tot_BS
+
+
+
+#### Industry 7
+z_dom_7_tot_BS = Exo_model$simulation$z_dom_17 + Exo_model$simulation$z_dom_27 + Exo_model$simulation$z_dom_37 + Exo_model$simulation$z_dom_47 + Exo_model$simulation$z_dom_57 + Exo_model$simulation$z_dom_67 + Exo_model$simulation$z_dom_77 + Exo_model$simulation$z_dom_87 + Exo_model$simulation$z_dom_97
+
+zk_dom_7_tot_BS = Exo_model$simulation$zk_dom_17 + Exo_model$simulation$zk_dom_27 + Exo_model$simulation$zk_dom_37 + Exo_model$simulation$zk_dom_47 + Exo_model$simulation$zk_dom_57 + Exo_model$simulation$zk_dom_67 + Exo_model$simulation$zk_dom_77 + Exo_model$simulation$zk_dom_87 + Exo_model$simulation$zk_dom_97
+
+z_im_7_tot_BS = Exo_model$simulation$z_im_17 + Exo_model$simulation$z_im_27 + Exo_model$simulation$z_im_37 + Exo_model$simulation$z_im_47 + Exo_model$simulation$z_im_57 + Exo_model$simulation$z_im_67 + Exo_model$simulation$z_im_77 + Exo_model$simulation$z_im_87 + Exo_model$simulation$z_im_97 + Exo_model$simulation$z_im_un_7
+
+zk_im_7_tot_BS = Exo_model$simulation$zk_im_17 + Exo_model$simulation$zk_im_27 + Exo_model$simulation$zk_im_37 + Exo_model$simulation$zk_im_47 + Exo_model$simulation$zk_im_57 + Exo_model$simulation$zk_im_67 + Exo_model$simulation$zk_im_77 + Exo_model$simulation$zk_im_87 + Exo_model$simulation$zk_im_97 + Exo_model$simulation$zk_im_un_7
+
+z_7_tot_BS = z_dom_7_tot_BS + z_im_7_tot_BS
+
+zk_7_tot_BS = zk_dom_7_tot_BS + zk_im_7_tot_BS
+
+
+
+#### Industry 7
+z_dom_8_tot_BS = Exo_model$simulation$z_dom_18 + Exo_model$simulation$z_dom_28 + Exo_model$simulation$z_dom_38 + Exo_model$simulation$z_dom_48 + Exo_model$simulation$z_dom_58 + Exo_model$simulation$z_dom_68 + Exo_model$simulation$z_dom_78 + Exo_model$simulation$z_dom_88 + Exo_model$simulation$z_dom_98
+
+zk_dom_8_tot_BS = Exo_model$simulation$zk_dom_18 + Exo_model$simulation$zk_dom_28 + Exo_model$simulation$zk_dom_38 + Exo_model$simulation$zk_dom_48 + Exo_model$simulation$zk_dom_58 + Exo_model$simulation$zk_dom_68 + Exo_model$simulation$zk_dom_78 + Exo_model$simulation$zk_dom_88 + Exo_model$simulation$zk_dom_98
+
+z_im_8_tot_BS = Exo_model$simulation$z_im_18 + Exo_model$simulation$z_im_28 + Exo_model$simulation$z_im_38 + Exo_model$simulation$z_im_48 + Exo_model$simulation$z_im_58 + Exo_model$simulation$z_im_68 + Exo_model$simulation$z_im_78 + Exo_model$simulation$z_im_88 + Exo_model$simulation$z_im_98 + Exo_model$simulation$z_im_un_8
+
+zk_im_8_tot_BS = Exo_model$simulation$zk_im_18 + Exo_model$simulation$zk_im_28 + Exo_model$simulation$zk_im_38 + Exo_model$simulation$zk_im_48 + Exo_model$simulation$zk_im_58 + Exo_model$simulation$zk_im_68 + Exo_model$simulation$zk_im_78 + Exo_model$simulation$zk_im_88 + Exo_model$simulation$zk_im_98 + Exo_model$simulation$zk_im_un_8
+
+z_8_tot_BS = z_dom_8_tot_BS + z_im_8_tot_BS
+
+zk_8_tot_BS = zk_dom_8_tot_BS + zk_im_8_tot_BS
+
+
+
+#### Industry 9
+z_dom_9_tot_BS = Exo_model$simulation$z_dom_19 + Exo_model$simulation$z_dom_29 + Exo_model$simulation$z_dom_39 + Exo_model$simulation$z_dom_49 + Exo_model$simulation$z_dom_59 + Exo_model$simulation$z_dom_69 + Exo_model$simulation$z_dom_79 + Exo_model$simulation$z_dom_89 + Exo_model$simulation$z_dom_99
+
+zk_dom_9_tot_BS = Exo_model$simulation$zk_dom_19 + Exo_model$simulation$zk_dom_29 + Exo_model$simulation$zk_dom_39 + Exo_model$simulation$zk_dom_49 + Exo_model$simulation$zk_dom_59 + Exo_model$simulation$zk_dom_69 + Exo_model$simulation$zk_dom_79 + Exo_model$simulation$zk_dom_89 + Exo_model$simulation$zk_dom_99
+
+z_im_9_tot_BS = Exo_model$simulation$z_im_19 + Exo_model$simulation$z_im_29 + Exo_model$simulation$z_im_39 + Exo_model$simulation$z_im_49 + Exo_model$simulation$z_im_59 + Exo_model$simulation$z_im_69 + Exo_model$simulation$z_im_79 + Exo_model$simulation$z_im_89 + Exo_model$simulation$z_im_99 + Exo_model$simulation$z_im_un_9
+
+zk_im_9_tot_BS = Exo_model$simulation$zk_im_19 + Exo_model$simulation$zk_im_29 + Exo_model$simulation$zk_im_39 + Exo_model$simulation$zk_im_49 + Exo_model$simulation$zk_im_59 + Exo_model$simulation$zk_im_69 + Exo_model$simulation$zk_im_79 + Exo_model$simulation$zk_im_89 + Exo_model$simulation$zk_im_99 + Exo_model$simulation$zk_im_un_9
+
+z_9_tot_BS = z_dom_9_tot_BS + z_im_9_tot_BS
+
+zk_9_tot_BS = zk_dom_9_tot_BS + zk_im_9_tot_BS
+
+```
+
+**Scenario 1**
+
+```{r}
+
+#### Industry 1
+z_dom_1_tot_S1 = Exo_model_S1$simulation$z_dom_11 + Exo_model_S1$simulation$z_dom_21 + Exo_model_S1$simulation$z_dom_31 + Exo_model_S1$simulation$z_dom_41 + Exo_model_S1$simulation$z_dom_51 + Exo_model_S1$simulation$z_dom_61 + Exo_model_S1$simulation$z_dom_71 + Exo_model_S1$simulation$z_dom_81 + Exo_model_S1$simulation$z_dom_91
+
+zk_dom_1_tot_S1 = Exo_model_S1$simulation$zk_dom_11 + Exo_model_S1$simulation$zk_dom_21 + Exo_model_S1$simulation$zk_dom_31 + Exo_model_S1$simulation$zk_dom_41 + Exo_model_S1$simulation$zk_dom_51 + Exo_model_S1$simulation$zk_dom_61 + Exo_model_S1$simulation$zk_dom_71 + Exo_model_S1$simulation$zk_dom_81 + Exo_model_S1$simulation$zk_dom_91
+
+z_im_1_tot_S1 = Exo_model_S1$simulation$z_im_11 + Exo_model_S1$simulation$z_im_21 + Exo_model_S1$simulation$z_im_31 + Exo_model_S1$simulation$z_im_41 + Exo_model_S1$simulation$z_im_51 + Exo_model_S1$simulation$z_im_61 + Exo_model_S1$simulation$z_im_71 + Exo_model_S1$simulation$z_im_81 + Exo_model_S1$simulation$z_im_91 + Exo_model_S1$simulation$z_im_un_1
+
+zk_im_1_tot_S1 = Exo_model_S1$simulation$zk_im_11 + Exo_model_S1$simulation$zk_im_21 + Exo_model_S1$simulation$zk_im_31 + Exo_model_S1$simulation$zk_im_41 + Exo_model_S1$simulation$zk_im_51 + Exo_model_S1$simulation$zk_im_61 + Exo_model_S1$simulation$zk_im_71 + Exo_model_S1$simulation$zk_im_81 + Exo_model_S1$simulation$zk_im_91 + Exo_model_S1$simulation$zk_im_un_1
+
+z_1_tot_S1 = z_dom_1_tot_S1 + z_im_1_tot_S1
+
+zk_1_tot_S1 = zk_dom_1_tot_S1 + zk_im_1_tot_S1
+
+
+
+#### Industry 2
+z_dom_2_tot_S1 = Exo_model_S1$simulation$z_dom_12 + Exo_model_S1$simulation$z_dom_22 + Exo_model_S1$simulation$z_dom_32 + Exo_model_S1$simulation$z_dom_42 + Exo_model_S1$simulation$z_dom_52 + Exo_model_S1$simulation$z_dom_62 + Exo_model_S1$simulation$z_dom_72 + Exo_model_S1$simulation$z_dom_82 + Exo_model_S1$simulation$z_dom_92
+
+zk_dom_2_tot_S1 = Exo_model_S1$simulation$zk_dom_12 + Exo_model_S1$simulation$zk_dom_22 + Exo_model_S1$simulation$zk_dom_32 + Exo_model_S1$simulation$zk_dom_42 + Exo_model_S1$simulation$zk_dom_52 + Exo_model_S1$simulation$zk_dom_62 + Exo_model_S1$simulation$zk_dom_72 + Exo_model_S1$simulation$zk_dom_82 + Exo_model_S1$simulation$zk_dom_92
+
+z_im_2_tot_S1 = Exo_model_S1$simulation$z_im_12 + Exo_model_S1$simulation$z_im_22 + Exo_model_S1$simulation$z_im_32 + Exo_model_S1$simulation$z_im_42 + Exo_model_S1$simulation$z_im_52 + Exo_model_S1$simulation$z_im_62 + Exo_model_S1$simulation$z_im_72 + Exo_model_S1$simulation$z_im_82 + Exo_model_S1$simulation$z_im_92 + Exo_model_S1$simulation$z_im_un_2
+
+zk_im_2_tot_S1 = Exo_model_S1$simulation$zk_im_12 + Exo_model_S1$simulation$zk_im_22 + Exo_model_S1$simulation$zk_im_32 + Exo_model_S1$simulation$zk_im_42 + Exo_model_S1$simulation$zk_im_52 + Exo_model_S1$simulation$zk_im_62 + Exo_model_S1$simulation$zk_im_72 + Exo_model_S1$simulation$zk_im_82 + Exo_model_S1$simulation$zk_im_92 + Exo_model_S1$simulation$zk_im_un_2
+
+z_2_tot_S1 = z_dom_2_tot_S1 + z_im_2_tot_S1
+
+zk_2_tot_S1 = zk_dom_2_tot_S1 + zk_im_2_tot_S1
+
+
+
+#### Industry 3
+z_dom_3_tot_S1 = Exo_model_S1$simulation$z_dom_13 + Exo_model_S1$simulation$z_dom_23 + Exo_model_S1$simulation$z_dom_33 + Exo_model_S1$simulation$z_dom_43 + Exo_model_S1$simulation$z_dom_53 + Exo_model_S1$simulation$z_dom_63 + Exo_model_S1$simulation$z_dom_73 + Exo_model_S1$simulation$z_dom_83 + Exo_model_S1$simulation$z_dom_93
+
+zk_dom_3_tot_S1 = Exo_model_S1$simulation$zk_dom_13 + Exo_model_S1$simulation$zk_dom_23 + Exo_model_S1$simulation$zk_dom_33 + Exo_model_S1$simulation$zk_dom_43 + Exo_model_S1$simulation$zk_dom_53 + Exo_model_S1$simulation$zk_dom_63 + Exo_model_S1$simulation$zk_dom_73 + Exo_model_S1$simulation$zk_dom_83 + Exo_model_S1$simulation$zk_dom_93
+
+z_im_3_tot_S1 = Exo_model_S1$simulation$z_im_13 + Exo_model_S1$simulation$z_im_23 + Exo_model_S1$simulation$z_im_33 + Exo_model_S1$simulation$z_im_43 + Exo_model_S1$simulation$z_im_53 + Exo_model_S1$simulation$z_im_63 + Exo_model_S1$simulation$z_im_73 + Exo_model_S1$simulation$z_im_83 + Exo_model_S1$simulation$z_im_93 + Exo_model_S1$simulation$z_im_un_3
+
+zk_im_3_tot_S1 = Exo_model_S1$simulation$zk_im_13 + Exo_model_S1$simulation$zk_im_23 + Exo_model_S1$simulation$zk_im_33 + Exo_model_S1$simulation$zk_im_43 + Exo_model_S1$simulation$zk_im_53 + Exo_model_S1$simulation$zk_im_63 + Exo_model_S1$simulation$zk_im_73 + Exo_model_S1$simulation$zk_im_83 + Exo_model_S1$simulation$zk_im_93 + Exo_model_S1$simulation$zk_im_un_3
+
+z_3_tot_S1 = z_dom_3_tot_S1 + z_im_3_tot_S1
+
+zk_3_tot_S1 = zk_dom_3_tot_S1 + zk_im_3_tot_S1
+
+
+
+#### Industry 4
+z_dom_4_tot_S1 = Exo_model_S1$simulation$z_dom_14 + Exo_model_S1$simulation$z_dom_24 + Exo_model_S1$simulation$z_dom_34 + Exo_model_S1$simulation$z_dom_44 + Exo_model_S1$simulation$z_dom_54 + Exo_model_S1$simulation$z_dom_64 + Exo_model_S1$simulation$z_dom_74 + Exo_model_S1$simulation$z_dom_84 + Exo_model_S1$simulation$z_dom_94
+
+zk_dom_4_tot_S1 = Exo_model_S1$simulation$zk_dom_14 + Exo_model_S1$simulation$zk_dom_24 + Exo_model_S1$simulation$zk_dom_34 + Exo_model_S1$simulation$zk_dom_44 + Exo_model_S1$simulation$zk_dom_54 + Exo_model_S1$simulation$zk_dom_64 + Exo_model_S1$simulation$zk_dom_74 + Exo_model_S1$simulation$zk_dom_84 + Exo_model_S1$simulation$zk_dom_94
+
+z_im_4_tot_S1 = Exo_model_S1$simulation$z_im_14 + Exo_model_S1$simulation$z_im_24 + Exo_model_S1$simulation$z_im_34 + Exo_model_S1$simulation$z_im_44 + Exo_model_S1$simulation$z_im_54 + Exo_model_S1$simulation$z_im_64 + Exo_model_S1$simulation$z_im_74 + Exo_model_S1$simulation$z_im_84 + Exo_model_S1$simulation$z_im_94 + Exo_model_S1$simulation$z_im_un_4
+
+zk_im_4_tot_S1 = Exo_model_S1$simulation$zk_im_14 + Exo_model_S1$simulation$zk_im_24 + Exo_model_S1$simulation$zk_im_34 + Exo_model_S1$simulation$zk_im_44 + Exo_model_S1$simulation$zk_im_54 + Exo_model_S1$simulation$zk_im_64 + Exo_model_S1$simulation$zk_im_74 + Exo_model_S1$simulation$zk_im_84 + Exo_model_S1$simulation$zk_im_94 + Exo_model_S1$simulation$zk_im_un_4
+
+z_4_tot_S1 = z_dom_4_tot_S1 + z_im_4_tot_S1
+
+zk_4_tot_S1 = zk_dom_4_tot_S1 + zk_im_4_tot_S1
+
+
+
+#### Industry 5
+z_dom_5_tot_S1 = Exo_model_S1$simulation$z_dom_15 + Exo_model_S1$simulation$z_dom_25 + Exo_model_S1$simulation$z_dom_35 + Exo_model_S1$simulation$z_dom_45 + Exo_model_S1$simulation$z_dom_55 + Exo_model_S1$simulation$z_dom_65 + Exo_model_S1$simulation$z_dom_75 + Exo_model_S1$simulation$z_dom_85 + Exo_model_S1$simulation$z_dom_95
+
+zk_dom_5_tot_S1 = Exo_model_S1$simulation$zk_dom_15 + Exo_model_S1$simulation$zk_dom_25 + Exo_model_S1$simulation$zk_dom_35 + Exo_model_S1$simulation$zk_dom_45 + Exo_model_S1$simulation$zk_dom_55 + Exo_model_S1$simulation$zk_dom_65 + Exo_model_S1$simulation$zk_dom_75 + Exo_model_S1$simulation$zk_dom_85 + Exo_model_S1$simulation$zk_dom_95
+
+z_im_5_tot_S1 = Exo_model_S1$simulation$z_im_15 + Exo_model_S1$simulation$z_im_25 + Exo_model_S1$simulation$z_im_35 + Exo_model_S1$simulation$z_im_45 + Exo_model_S1$simulation$z_im_55 + Exo_model_S1$simulation$z_im_65 + Exo_model_S1$simulation$z_im_75 + Exo_model_S1$simulation$z_im_85 + Exo_model_S1$simulation$z_im_95 + Exo_model_S1$simulation$z_im_un_5
+
+zk_im_5_tot_S1 = Exo_model_S1$simulation$zk_im_15 + Exo_model_S1$simulation$zk_im_25 + Exo_model_S1$simulation$zk_im_35 + Exo_model_S1$simulation$zk_im_45 + Exo_model_S1$simulation$zk_im_55 + Exo_model_S1$simulation$zk_im_65 + Exo_model_S1$simulation$zk_im_75 + Exo_model_S1$simulation$zk_im_85 + Exo_model_S1$simulation$zk_im_95 + Exo_model_S1$simulation$zk_im_un_5
+
+z_5_tot_S1 = z_dom_5_tot_S1 + z_im_5_tot_S1
+
+zk_5_tot_S1 = zk_dom_5_tot_S1 + zk_im_5_tot_S1
+
+
+
+#### Industry 6
+z_dom_6_tot_S1 = Exo_model_S1$simulation$z_dom_16 + Exo_model_S1$simulation$z_dom_26 + Exo_model_S1$simulation$z_dom_36 + Exo_model_S1$simulation$z_dom_46 + Exo_model_S1$simulation$z_dom_56 + Exo_model_S1$simulation$z_dom_66 + Exo_model_S1$simulation$z_dom_76 + Exo_model_S1$simulation$z_dom_86 + Exo_model_S1$simulation$z_dom_96
+
+zk_dom_6_tot_S1 = Exo_model_S1$simulation$zk_dom_16 + Exo_model_S1$simulation$zk_dom_26 + Exo_model_S1$simulation$zk_dom_36 + Exo_model_S1$simulation$zk_dom_46 + Exo_model_S1$simulation$zk_dom_56 + Exo_model_S1$simulation$zk_dom_66 + Exo_model_S1$simulation$zk_dom_76 + Exo_model_S1$simulation$zk_dom_86 + Exo_model_S1$simulation$zk_dom_96
+
+z_im_6_tot_S1 = Exo_model_S1$simulation$z_im_16 + Exo_model_S1$simulation$z_im_26 + Exo_model_S1$simulation$z_im_36 + Exo_model_S1$simulation$z_im_46 + Exo_model_S1$simulation$z_im_56 + Exo_model_S1$simulation$z_im_66 + Exo_model_S1$simulation$z_im_76 + Exo_model_S1$simulation$z_im_86 + Exo_model_S1$simulation$z_im_96 + Exo_model_S1$simulation$z_im_un_6
+
+zk_im_6_tot_S1 = Exo_model_S1$simulation$zk_im_16 + Exo_model_S1$simulation$zk_im_26 + Exo_model_S1$simulation$zk_im_36 + Exo_model_S1$simulation$zk_im_46 + Exo_model_S1$simulation$zk_im_56 + Exo_model_S1$simulation$zk_im_66 + Exo_model_S1$simulation$zk_im_76 + Exo_model_S1$simulation$zk_im_86 + Exo_model_S1$simulation$zk_im_96 + Exo_model_S1$simulation$zk_im_un_6
+
+z_6_tot_S1 = z_dom_6_tot_S1 + z_im_6_tot_S1
+
+zk_6_tot_S1 = zk_dom_6_tot_S1 + zk_im_6_tot_S1
+
+
+
+#### Industry 7
+z_dom_7_tot_S1 = Exo_model_S1$simulation$z_dom_17 + Exo_model_S1$simulation$z_dom_27 + Exo_model_S1$simulation$z_dom_37 + Exo_model_S1$simulation$z_dom_47 + Exo_model_S1$simulation$z_dom_57 + Exo_model_S1$simulation$z_dom_67 + Exo_model_S1$simulation$z_dom_77 + Exo_model_S1$simulation$z_dom_87 + Exo_model_S1$simulation$z_dom_97
+
+zk_dom_7_tot_S1 = Exo_model_S1$simulation$zk_dom_17 + Exo_model_S1$simulation$zk_dom_27 + Exo_model_S1$simulation$zk_dom_37 + Exo_model_S1$simulation$zk_dom_47 + Exo_model_S1$simulation$zk_dom_57 + Exo_model_S1$simulation$zk_dom_67 + Exo_model_S1$simulation$zk_dom_77 + Exo_model_S1$simulation$zk_dom_87 + Exo_model_S1$simulation$zk_dom_97
+
+z_im_7_tot_S1 = Exo_model_S1$simulation$z_im_17 + Exo_model_S1$simulation$z_im_27 + Exo_model_S1$simulation$z_im_37 + Exo_model_S1$simulation$z_im_47 + Exo_model_S1$simulation$z_im_57 + Exo_model_S1$simulation$z_im_67 + Exo_model_S1$simulation$z_im_77 + Exo_model_S1$simulation$z_im_87 + Exo_model_S1$simulation$z_im_97 + Exo_model_S1$simulation$z_im_un_7
+
+zk_im_7_tot_S1 = Exo_model_S1$simulation$zk_im_17 + Exo_model_S1$simulation$zk_im_27 + Exo_model_S1$simulation$zk_im_37 + Exo_model_S1$simulation$zk_im_47 + Exo_model_S1$simulation$zk_im_57 + Exo_model_S1$simulation$zk_im_67 + Exo_model_S1$simulation$zk_im_77 + Exo_model_S1$simulation$zk_im_87 + Exo_model_S1$simulation$zk_im_97 + Exo_model_S1$simulation$zk_im_un_7
+
+z_7_tot_S1 = z_dom_7_tot_S1 + z_im_7_tot_S1
+
+zk_7_tot_S1 = zk_dom_7_tot_S1 + zk_im_7_tot_S1
+
+
+#### Industry 8
+z_dom_8_tot_S1 = Exo_model_S1$simulation$z_dom_18 + Exo_model_S1$simulation$z_dom_28 + Exo_model_S1$simulation$z_dom_38 + Exo_model_S1$simulation$z_dom_48 + Exo_model_S1$simulation$z_dom_58 + Exo_model_S1$simulation$z_dom_68 + Exo_model_S1$simulation$z_dom_78 + Exo_model_S1$simulation$z_dom_88 + Exo_model_S1$simulation$z_dom_98
+
+zk_dom_8_tot_S1 = Exo_model_S1$simulation$zk_dom_18 + Exo_model_S1$simulation$zk_dom_28 + Exo_model_S1$simulation$zk_dom_38 + Exo_model_S1$simulation$zk_dom_48 + Exo_model_S1$simulation$zk_dom_58 + Exo_model_S1$simulation$zk_dom_68 + Exo_model_S1$simulation$zk_dom_78 + Exo_model_S1$simulation$zk_dom_88 + Exo_model_S1$simulation$zk_dom_98
+
+z_im_8_tot_S1 = Exo_model_S1$simulation$z_im_18 + Exo_model_S1$simulation$z_im_28 + Exo_model_S1$simulation$z_im_38 + Exo_model_S1$simulation$z_im_48 + Exo_model_S1$simulation$z_im_58 + Exo_model_S1$simulation$z_im_68 + Exo_model_S1$simulation$z_im_78 + Exo_model_S1$simulation$z_im_88 + Exo_model_S1$simulation$z_im_98 + Exo_model_S1$simulation$z_im_un_8
+
+zk_im_8_tot_S1 = Exo_model_S1$simulation$zk_im_18 + Exo_model_S1$simulation$zk_im_28 + Exo_model_S1$simulation$zk_im_38 + Exo_model_S1$simulation$zk_im_48 + Exo_model_S1$simulation$zk_im_58 + Exo_model_S1$simulation$zk_im_68 + Exo_model_S1$simulation$zk_im_78 + Exo_model_S1$simulation$zk_im_88 + Exo_model_S1$simulation$zk_im_98 + Exo_model_S1$simulation$zk_im_un_8
+
+z_8_tot_S1 = z_dom_8_tot_S1 + z_im_8_tot_S1
+
+zk_8_tot_S1 = zk_dom_8_tot_S1 + zk_im_8_tot_S1
+
+
+
+#### Industry 9
+z_dom_9_tot_S1 = Exo_model_S1$simulation$z_dom_19 + Exo_model_S1$simulation$z_dom_29 + Exo_model_S1$simulation$z_dom_39 + Exo_model_S1$simulation$z_dom_49 + Exo_model_S1$simulation$z_dom_59 + Exo_model_S1$simulation$z_dom_69 + Exo_model_S1$simulation$z_dom_79 + Exo_model_S1$simulation$z_dom_89 + Exo_model_S1$simulation$z_dom_99
+
+zk_dom_9_tot_S1 = Exo_model_S1$simulation$zk_dom_19 + Exo_model_S1$simulation$zk_dom_29 + Exo_model_S1$simulation$zk_dom_39 + Exo_model_S1$simulation$zk_dom_49 + Exo_model_S1$simulation$zk_dom_59 + Exo_model_S1$simulation$zk_dom_69 + Exo_model_S1$simulation$zk_dom_79 + Exo_model_S1$simulation$zk_dom_89 + Exo_model_S1$simulation$zk_dom_99
+
+z_im_9_tot_S1 = Exo_model_S1$simulation$z_im_19 + Exo_model_S1$simulation$z_im_29 + Exo_model_S1$simulation$z_im_39 + Exo_model_S1$simulation$z_im_49 + Exo_model_S1$simulation$z_im_59 + Exo_model_S1$simulation$z_im_69 + Exo_model_S1$simulation$z_im_79 + Exo_model_S1$simulation$z_im_89 + Exo_model_S1$simulation$z_im_99 + Exo_model_S1$simulation$z_im_un_9
+
+zk_im_9_tot_S1 = Exo_model_S1$simulation$zk_im_19 + Exo_model_S1$simulation$zk_im_29 + Exo_model_S1$simulation$zk_im_39 + Exo_model_S1$simulation$zk_im_49 + Exo_model_S1$simulation$zk_im_59 + Exo_model_S1$simulation$zk_im_69 + Exo_model_S1$simulation$zk_im_79 + Exo_model_S1$simulation$zk_im_89 + Exo_model_S1$simulation$zk_im_99 + Exo_model_S1$simulation$zk_im_un_9
+
+z_9_tot_S1 = z_dom_9_tot_S1 + z_im_9_tot_S1
+
+zk_9_tot_S1 = zk_dom_9_tot_S1 + zk_im_9_tot_S1
+
+
+```
+
+
+**Scenario 2**
+
+```{r}
+
+#### Industry 1
+z_dom_1_tot_S2 = Exo_model_S2$simulation$z_dom_11 + Exo_model_S2$simulation$z_dom_21 + Exo_model_S2$simulation$z_dom_31 + Exo_model_S2$simulation$z_dom_41 + Exo_model_S2$simulation$z_dom_51 + Exo_model_S2$simulation$z_dom_61 + Exo_model_S2$simulation$z_dom_71 + Exo_model_S2$simulation$z_dom_81 + Exo_model_S2$simulation$z_dom_91
+
+zk_dom_1_tot_S2 = Exo_model_S2$simulation$zk_dom_11 + Exo_model_S2$simulation$zk_dom_21 + Exo_model_S2$simulation$zk_dom_31 + Exo_model_S2$simulation$zk_dom_41 + Exo_model_S2$simulation$zk_dom_51 + Exo_model_S2$simulation$zk_dom_61 + Exo_model_S2$simulation$zk_dom_71 + Exo_model_S2$simulation$zk_dom_81 + Exo_model_S2$simulation$zk_dom_91
+
+z_im_1_tot_S2 = Exo_model_S2$simulation$z_im_11 + Exo_model_S2$simulation$z_im_21 + Exo_model_S2$simulation$z_im_31 + Exo_model_S2$simulation$z_im_41 + Exo_model_S2$simulation$z_im_51 + Exo_model_S2$simulation$z_im_61 + Exo_model_S2$simulation$z_im_71 + Exo_model_S2$simulation$z_im_81 + Exo_model_S2$simulation$z_im_91 + Exo_model_S2$simulation$z_im_un_1
+
+zk_im_1_tot_S2 = Exo_model_S2$simulation$zk_im_11 + Exo_model_S2$simulation$zk_im_21 + Exo_model_S2$simulation$zk_im_31 + Exo_model_S2$simulation$zk_im_41 + Exo_model_S2$simulation$zk_im_51 + Exo_model_S2$simulation$zk_im_61 + Exo_model_S2$simulation$zk_im_71 + Exo_model_S2$simulation$zk_im_81 + Exo_model_S2$simulation$zk_im_91 + Exo_model_S2$simulation$zk_im_un_1
+
+z_1_tot_S2 = z_dom_1_tot_S2 + z_im_1_tot_S2
+
+zk_1_tot_S2 = zk_dom_1_tot_S2 + zk_im_1_tot_S2
+
+
+
+#### Industry 2
+z_dom_2_tot_S2 = Exo_model_S2$simulation$z_dom_12 + Exo_model_S2$simulation$z_dom_22 + Exo_model_S2$simulation$z_dom_32 + Exo_model_S2$simulation$z_dom_42 + Exo_model_S2$simulation$z_dom_52 + Exo_model_S2$simulation$z_dom_62 + Exo_model_S2$simulation$z_dom_72 + Exo_model_S2$simulation$z_dom_82 + Exo_model_S2$simulation$z_dom_92
+
+zk_dom_2_tot_S2 = Exo_model_S2$simulation$zk_dom_12 + Exo_model_S2$simulation$zk_dom_22 + Exo_model_S2$simulation$zk_dom_32 + Exo_model_S2$simulation$zk_dom_42 + Exo_model_S2$simulation$zk_dom_52 + Exo_model_S2$simulation$zk_dom_62 + Exo_model_S2$simulation$zk_dom_72 + Exo_model_S2$simulation$zk_dom_82 + Exo_model_S2$simulation$zk_dom_92
+
+z_im_2_tot_S2 = Exo_model_S2$simulation$z_im_12 + Exo_model_S2$simulation$z_im_22 + Exo_model_S2$simulation$z_im_32 + Exo_model_S2$simulation$z_im_42 + Exo_model_S2$simulation$z_im_52 + Exo_model_S2$simulation$z_im_62 + Exo_model_S2$simulation$z_im_72 + Exo_model_S2$simulation$z_im_82 + Exo_model_S2$simulation$z_im_92 + Exo_model_S2$simulation$z_im_un_2
+
+zk_im_2_tot_S2 = Exo_model_S2$simulation$zk_im_12 + Exo_model_S2$simulation$zk_im_22 + Exo_model_S2$simulation$zk_im_32 + Exo_model_S2$simulation$zk_im_42 + Exo_model_S2$simulation$zk_im_52 + Exo_model_S2$simulation$zk_im_62 + Exo_model_S2$simulation$zk_im_72 + Exo_model_S2$simulation$zk_im_82 + Exo_model_S2$simulation$zk_im_92 + Exo_model_S2$simulation$zk_im_un_2
+
+z_2_tot_S2 = z_dom_2_tot_S2 + z_im_2_tot_S2
+
+zk_2_tot_S2 = zk_dom_2_tot_S2 + zk_im_2_tot_S2
+
+
+
+#### Industry 3
+z_dom_3_tot_S2 = Exo_model_S2$simulation$z_dom_13 + Exo_model_S2$simulation$z_dom_23 + Exo_model_S2$simulation$z_dom_33 + Exo_model_S2$simulation$z_dom_43 + Exo_model_S2$simulation$z_dom_53 + Exo_model_S2$simulation$z_dom_63 + Exo_model_S2$simulation$z_dom_73 + Exo_model_S2$simulation$z_dom_83 + Exo_model_S2$simulation$z_dom_93
+
+zk_dom_3_tot_S2 = Exo_model_S2$simulation$zk_dom_13 + Exo_model_S2$simulation$zk_dom_23 + Exo_model_S2$simulation$zk_dom_33 + Exo_model_S2$simulation$zk_dom_43 + Exo_model_S2$simulation$zk_dom_53 + Exo_model_S2$simulation$zk_dom_63 + Exo_model_S2$simulation$zk_dom_73 + Exo_model_S2$simulation$zk_dom_83 + Exo_model_S2$simulation$zk_dom_93
+
+z_im_3_tot_S2 = Exo_model_S2$simulation$z_im_13 + Exo_model_S2$simulation$z_im_23 + Exo_model_S2$simulation$z_im_33 + Exo_model_S2$simulation$z_im_43 + Exo_model_S2$simulation$z_im_53 + Exo_model_S2$simulation$z_im_63 + Exo_model_S2$simulation$z_im_73 + Exo_model_S2$simulation$z_im_83 + Exo_model_S2$simulation$z_im_93 + Exo_model_S2$simulation$z_im_un_3
+
+zk_im_3_tot_S2 = Exo_model_S2$simulation$zk_im_13 + Exo_model_S2$simulation$zk_im_23 + Exo_model_S2$simulation$zk_im_33 + Exo_model_S2$simulation$zk_im_43 + Exo_model_S2$simulation$zk_im_53 + Exo_model_S2$simulation$zk_im_63 + Exo_model_S2$simulation$zk_im_73 + Exo_model_S2$simulation$zk_im_83 + Exo_model_S2$simulation$zk_im_93 + Exo_model_S2$simulation$zk_im_un_3
+
+z_3_tot_S2 = z_dom_3_tot_S2 + z_im_3_tot_S2
+
+zk_3_tot_S2 = zk_dom_3_tot_S2 + zk_im_3_tot_S2
+
+
+
+#### Industry 4
+z_dom_4_tot_S2 = Exo_model_S2$simulation$z_dom_14 + Exo_model_S2$simulation$z_dom_24 + Exo_model_S2$simulation$z_dom_34 + Exo_model_S2$simulation$z_dom_44 + Exo_model_S2$simulation$z_dom_54 + Exo_model_S2$simulation$z_dom_64 + Exo_model_S2$simulation$z_dom_74 + Exo_model_S2$simulation$z_dom_84 + Exo_model_S2$simulation$z_dom_94
+
+zk_dom_4_tot_S2 = Exo_model_S2$simulation$zk_dom_14 + Exo_model_S2$simulation$zk_dom_24 + Exo_model_S2$simulation$zk_dom_34 + Exo_model_S2$simulation$zk_dom_44 + Exo_model_S2$simulation$zk_dom_54 + Exo_model_S2$simulation$zk_dom_64 + Exo_model_S2$simulation$zk_dom_74 + Exo_model_S2$simulation$zk_dom_84 + Exo_model_S2$simulation$zk_dom_94
+
+z_im_4_tot_S2 = Exo_model_S2$simulation$z_im_14 + Exo_model_S2$simulation$z_im_24 + Exo_model_S2$simulation$z_im_34 + Exo_model_S2$simulation$z_im_44 + Exo_model_S2$simulation$z_im_54 + Exo_model_S2$simulation$z_im_64 + Exo_model_S2$simulation$z_im_74 + Exo_model_S2$simulation$z_im_84 + Exo_model_S2$simulation$z_im_94 + Exo_model_S2$simulation$z_im_un_4
+
+zk_im_4_tot_S2 = Exo_model_S2$simulation$zk_im_14 + Exo_model_S2$simulation$zk_im_24 + Exo_model_S2$simulation$zk_im_34 + Exo_model_S2$simulation$zk_im_44 + Exo_model_S2$simulation$zk_im_54 + Exo_model_S2$simulation$zk_im_64 + Exo_model_S2$simulation$zk_im_74 + Exo_model_S2$simulation$zk_im_84 + Exo_model_S2$simulation$zk_im_94 + Exo_model_S2$simulation$zk_im_un_4
+
+z_4_tot_S2 = z_dom_4_tot_S2 + z_im_4_tot_S2
+
+zk_4_tot_S2 = zk_dom_4_tot_S2 + zk_im_4_tot_S2
+
+
+
+#### Industry 5
+z_dom_5_tot_S2 = Exo_model_S2$simulation$z_dom_15 + Exo_model_S2$simulation$z_dom_25 + Exo_model_S2$simulation$z_dom_35 + Exo_model_S2$simulation$z_dom_45 + Exo_model_S2$simulation$z_dom_55 + Exo_model_S2$simulation$z_dom_65 + Exo_model_S2$simulation$z_dom_75 + Exo_model_S2$simulation$z_dom_85 + Exo_model_S2$simulation$z_dom_95
+
+zk_dom_5_tot_S2 = Exo_model_S2$simulation$zk_dom_15 + Exo_model_S2$simulation$zk_dom_25 + Exo_model_S2$simulation$zk_dom_35 + Exo_model_S2$simulation$zk_dom_45 + Exo_model_S2$simulation$zk_dom_55 + Exo_model_S2$simulation$zk_dom_65 + Exo_model_S2$simulation$zk_dom_75 + Exo_model_S2$simulation$zk_dom_85 + Exo_model_S2$simulation$zk_dom_95
+
+z_im_5_tot_S2 = Exo_model_S2$simulation$z_im_15 + Exo_model_S2$simulation$z_im_25 + Exo_model_S2$simulation$z_im_35 + Exo_model_S2$simulation$z_im_45 + Exo_model_S2$simulation$z_im_55 + Exo_model_S2$simulation$z_im_65 + Exo_model_S2$simulation$z_im_75 + Exo_model_S2$simulation$z_im_85 + Exo_model_S2$simulation$z_im_95 + Exo_model_S2$simulation$z_im_un_5
+
+zk_im_5_tot_S2 = Exo_model_S2$simulation$zk_im_15 + Exo_model_S2$simulation$zk_im_25 + Exo_model_S2$simulation$zk_im_35 + Exo_model_S2$simulation$zk_im_45 + Exo_model_S2$simulation$zk_im_55 + Exo_model_S2$simulation$zk_im_65 + Exo_model_S2$simulation$zk_im_75 + Exo_model_S2$simulation$zk_im_85 + Exo_model_S2$simulation$zk_im_95 + Exo_model_S2$simulation$zk_im_un_5
+
+z_5_tot_S2 = z_dom_5_tot_S2 + z_im_5_tot_S2
+
+zk_5_tot_S2 = zk_dom_5_tot_S2 + zk_im_5_tot_S2
+
+
+
+#### Industry 6
+z_dom_6_tot_S2 = Exo_model_S2$simulation$z_dom_16 + Exo_model_S2$simulation$z_dom_26 + Exo_model_S2$simulation$z_dom_36 + Exo_model_S2$simulation$z_dom_46 + Exo_model_S2$simulation$z_dom_56 + Exo_model_S2$simulation$z_dom_66 + Exo_model_S2$simulation$z_dom_76 + Exo_model_S2$simulation$z_dom_86 + Exo_model_S2$simulation$z_dom_96
+
+zk_dom_6_tot_S2 = Exo_model_S2$simulation$zk_dom_16 + Exo_model_S2$simulation$zk_dom_26 + Exo_model_S2$simulation$zk_dom_36 + Exo_model_S2$simulation$zk_dom_46 + Exo_model_S2$simulation$zk_dom_56 + Exo_model_S2$simulation$zk_dom_66 + Exo_model_S2$simulation$zk_dom_76 + Exo_model_S2$simulation$zk_dom_86 + Exo_model_S2$simulation$zk_dom_96
+
+z_im_6_tot_S2 = Exo_model_S2$simulation$z_im_16 + Exo_model_S2$simulation$z_im_26 + Exo_model_S2$simulation$z_im_36 + Exo_model_S2$simulation$z_im_46 + Exo_model_S2$simulation$z_im_56 + Exo_model_S2$simulation$z_im_66 + Exo_model_S2$simulation$z_im_76 + Exo_model_S2$simulation$z_im_86 + Exo_model_S2$simulation$z_im_96 + Exo_model_S2$simulation$z_im_un_6
+
+zk_im_6_tot_S2 = Exo_model_S2$simulation$zk_im_16 + Exo_model_S2$simulation$zk_im_26 + Exo_model_S2$simulation$zk_im_36 + Exo_model_S2$simulation$zk_im_46 + Exo_model_S2$simulation$zk_im_56 + Exo_model_S2$simulation$zk_im_66 + Exo_model_S2$simulation$zk_im_76 + Exo_model_S2$simulation$zk_im_86 + Exo_model_S2$simulation$zk_im_96 + Exo_model_S2$simulation$zk_im_un_6
+
+z_6_tot_S2 = z_dom_6_tot_S2 + z_im_6_tot_S2
+
+zk_6_tot_S2 = zk_dom_6_tot_S2 + zk_im_6_tot_S2
+
+
+
+#### Industry 7
+z_dom_7_tot_S2 = Exo_model_S2$simulation$z_dom_17 + Exo_model_S2$simulation$z_dom_27 + Exo_model_S2$simulation$z_dom_37 + Exo_model_S2$simulation$z_dom_47 + Exo_model_S2$simulation$z_dom_57 + Exo_model_S2$simulation$z_dom_67 + Exo_model_S2$simulation$z_dom_77 + Exo_model_S2$simulation$z_dom_87 + Exo_model_S2$simulation$z_dom_97
+
+zk_dom_7_tot_S2 = Exo_model_S2$simulation$zk_dom_17 + Exo_model_S2$simulation$zk_dom_27 + Exo_model_S2$simulation$zk_dom_37 + Exo_model_S2$simulation$zk_dom_47 + Exo_model_S2$simulation$zk_dom_57 + Exo_model_S2$simulation$zk_dom_67 + Exo_model_S2$simulation$zk_dom_77 + Exo_model_S2$simulation$zk_dom_87 + Exo_model_S2$simulation$zk_dom_97
+
+z_im_7_tot_S2 = Exo_model_S2$simulation$z_im_17 + Exo_model_S2$simulation$z_im_27 + Exo_model_S2$simulation$z_im_37 + Exo_model_S2$simulation$z_im_47 + Exo_model_S2$simulation$z_im_57 + Exo_model_S2$simulation$z_im_67 + Exo_model_S2$simulation$z_im_77 + Exo_model_S2$simulation$z_im_87 + Exo_model_S2$simulation$z_im_97 + Exo_model_S2$simulation$z_im_un_7
+
+zk_im_7_tot_S2 = Exo_model_S2$simulation$zk_im_17 + Exo_model_S2$simulation$zk_im_27 + Exo_model_S2$simulation$zk_im_37 + Exo_model_S2$simulation$zk_im_47 + Exo_model_S2$simulation$zk_im_57 + Exo_model_S2$simulation$zk_im_67 + Exo_model_S2$simulation$zk_im_77 + Exo_model_S2$simulation$zk_im_87 + Exo_model_S2$simulation$zk_im_97 + Exo_model_S2$simulation$zk_im_un_7
+
+z_7_tot_S2 = z_dom_7_tot_S2 + z_im_7_tot_S2
+
+zk_7_tot_S2 = zk_dom_7_tot_S2 + zk_im_7_tot_S2
+
+
+#### Industry 8
+z_dom_8_tot_S2 = Exo_model_S2$simulation$z_dom_18 + Exo_model_S2$simulation$z_dom_28 + Exo_model_S2$simulation$z_dom_38 + Exo_model_S2$simulation$z_dom_48 + Exo_model_S2$simulation$z_dom_58 + Exo_model_S2$simulation$z_dom_68 + Exo_model_S2$simulation$z_dom_78 + Exo_model_S2$simulation$z_dom_88 + Exo_model_S2$simulation$z_dom_98
+
+zk_dom_8_tot_S2 = Exo_model_S2$simulation$zk_dom_18 + Exo_model_S2$simulation$zk_dom_28 + Exo_model_S2$simulation$zk_dom_38 + Exo_model_S2$simulation$zk_dom_48 + Exo_model_S2$simulation$zk_dom_58 + Exo_model_S2$simulation$zk_dom_68 + Exo_model_S2$simulation$zk_dom_78 + Exo_model_S2$simulation$zk_dom_88 + Exo_model_S2$simulation$zk_dom_98
+
+z_im_8_tot_S2 = Exo_model_S2$simulation$z_im_18 + Exo_model_S2$simulation$z_im_28 + Exo_model_S2$simulation$z_im_38 + Exo_model_S2$simulation$z_im_48 + Exo_model_S2$simulation$z_im_58 + Exo_model_S2$simulation$z_im_68 + Exo_model_S2$simulation$z_im_78 + Exo_model_S2$simulation$z_im_88 + Exo_model_S2$simulation$z_im_98 + Exo_model_S2$simulation$z_im_un_8
+
+zk_im_8_tot_S2 = Exo_model_S2$simulation$zk_im_18 + Exo_model_S2$simulation$zk_im_28 + Exo_model_S2$simulation$zk_im_38 + Exo_model_S2$simulation$zk_im_48 + Exo_model_S2$simulation$zk_im_58 + Exo_model_S2$simulation$zk_im_68 + Exo_model_S2$simulation$zk_im_78 + Exo_model_S2$simulation$zk_im_88 + Exo_model_S2$simulation$zk_im_98 + Exo_model_S2$simulation$zk_im_un_8
+
+z_8_tot_S2 = z_dom_8_tot_S2 + z_im_8_tot_S2
+
+zk_8_tot_S2 = zk_dom_8_tot_S2 + zk_im_8_tot_S2
+
+
+
+#### Industry 9
+z_dom_9_tot_S2 = Exo_model_S2$simulation$z_dom_19 + Exo_model_S2$simulation$z_dom_29 + Exo_model_S2$simulation$z_dom_39 + Exo_model_S2$simulation$z_dom_49 + Exo_model_S2$simulation$z_dom_59 + Exo_model_S2$simulation$z_dom_69 + Exo_model_S2$simulation$z_dom_79 + Exo_model_S2$simulation$z_dom_89 + Exo_model_S2$simulation$z_dom_99
+
+zk_dom_9_tot_S2 = Exo_model_S2$simulation$zk_dom_19 + Exo_model_S2$simulation$zk_dom_29 + Exo_model_S2$simulation$zk_dom_39 + Exo_model_S2$simulation$zk_dom_49 + Exo_model_S2$simulation$zk_dom_59 + Exo_model_S2$simulation$zk_dom_69 + Exo_model_S2$simulation$zk_dom_79 + Exo_model_S2$simulation$zk_dom_89 + Exo_model_S2$simulation$zk_dom_99
+
+z_im_9_tot_S2 = Exo_model_S2$simulation$z_im_19 + Exo_model_S2$simulation$z_im_29 + Exo_model_S2$simulation$z_im_39 + Exo_model_S2$simulation$z_im_49 + Exo_model_S2$simulation$z_im_59 + Exo_model_S2$simulation$z_im_69 + Exo_model_S2$simulation$z_im_79 + Exo_model_S2$simulation$z_im_89 + Exo_model_S2$simulation$z_im_99 + Exo_model_S2$simulation$z_im_un_9
+
+zk_im_9_tot_S2 = Exo_model_S2$simulation$zk_im_19 + Exo_model_S2$simulation$zk_im_29 + Exo_model_S2$simulation$zk_im_39 + Exo_model_S2$simulation$zk_im_49 + Exo_model_S2$simulation$zk_im_59 + Exo_model_S2$simulation$zk_im_69 + Exo_model_S2$simulation$zk_im_79 + Exo_model_S2$simulation$zk_im_89 + Exo_model_S2$simulation$zk_im_99 + Exo_model_S2$simulation$zk_im_un_9
+
+z_9_tot_S2 = z_dom_9_tot_S2 + z_im_9_tot_S2
+
+zk_9_tot_S2 = zk_dom_9_tot_S2 + zk_im_9_tot_S2
+
+
+```
+
+
+
+
+```{r}
+#### Industry imports
+
+zk_im_tot_S2 = zk_im_1_tot_S2 + zk_im_2_tot_S2 + zk_im_3_tot_S2 + zk_im_4_tot_S2 + zk_im_5_tot_S2 + zk_im_6_tot_S2 + zk_im_7_tot_S2 + zk_im_8_tot_S2 + zk_im_9_tot_S2
+
+zk_im_tot_S1 = zk_im_1_tot_S1 + zk_im_2_tot_S1 + zk_im_3_tot_S1 + zk_im_4_tot_S1 + zk_im_5_tot_S1 + zk_im_6_tot_S1 + zk_im_7_tot_S1 + zk_im_8_tot_S1 + zk_im_9_tot_S1
+
+zk_im_tot_BS = zk_im_1_tot_BS + zk_im_2_tot_BS + zk_im_3_tot_BS + zk_im_4_tot_BS + zk_im_5_tot_BS + zk_im_6_tot_BS + zk_im_7_tot_BS + zk_im_8_tot_BS + zk_im_9_tot_BS
+
+
+#### final demand imports
+final_demand_im_tot_BS=Exo_model$simulation$ck_im_tot
+
+final_demand_im_tot_S1=Exo_model_S1$simulation$ck_im_tot
+
+final_demand_im_tot_S2=Exo_model_S2$simulation$ck_im_tot
+```
+
+
+
+```{r}
+
+#### Industry imports
+zk_tot_S2 = zk_1_tot_S2 + zk_2_tot_S2 + zk_3_tot_S2 + zk_4_tot_S2 + zk_5_tot_S2 + zk_6_tot_S2 + zk_7_tot_S2 + zk_8_tot_S2 + zk_9_tot_S2
+
+zk_tot_S1 = zk_1_tot_S1 + zk_2_tot_S1 + zk_3_tot_S1 + zk_4_tot_S1 + zk_5_tot_S1 + zk_6_tot_S1 + zk_7_tot_S1 + zk_8_tot_S1 + zk_9_tot_S1
+
+zk_tot_BS = zk_1_tot_BS + zk_2_tot_BS + zk_3_tot_BS + zk_4_tot_BS + zk_5_tot_BS + zk_6_tot_BS + zk_7_tot_BS + zk_8_tot_BS + zk_9_tot_BS
+
+
+#### final demand imports
+final_demand_tot_BS=Exo_model$simulation$ck_tot
+
+final_demand_tot_S1=Exo_model_S1$simulation$ck_tot
+
+final_demand_tot_S2=Exo_model_S2$simulation$ck_tot
+
+```
+
+
+**Figure 6: Effects on trade**
+
+```{r, fig.width=16, fig.height=12}
+
+par(mfrow = c(2, 2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+
+theme_journal()
+
+
+plot(window((Exo_model_S2$simulation$xk - Exo_model$simulation$xk)/Exo_model$simulation$xk*100,start= c(2020,1)), col= "black", ylab= "Percentage change from baseline" , main= "Real exports and imports: Scenario 2 (Production tax)" , lwd=3, xlab="",ylim= c(-1,0.1), cex.main=1.5);
+lines(window((zk_im_tot_S2 - zk_im_tot_BS)/zk_im_tot_BS*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((final_demand_im_tot_S2 - final_demand_im_tot_BS)/final_demand_im_tot_BS*100,start= c(2020,1)), col = "red", lwd=3, xlab="");legend("bottomleft",legend=c("Exports", "Imports of inputs","Imports of final consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("black", "blue","red"),cex=1.2);grid()
+
+
+plot(window((Exo_model_S2$simulation$exk_dom_1 - Exo_model$simulation$exk_dom_1)/Exo_model$simulation$exk_dom_1*100,start= c(2020,1)), ylim=c(-15,2),col= "red", ylab= "Percentage change from baseline" , main= "Real Exports: Scenario 2 (Production tax)", lwd=3, xlab="", cex.main=1.5);
+lines(window((Exo_model_S2$simulation$exk_dom_2 - Exo_model$simulation$exk_dom_2)/Exo_model$simulation$exk_dom_2*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S2$simulation$exk_dom_3 - Exo_model$simulation$exk_dom_3)/Exo_model$simulation$exk_dom_3*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_4 - Exo_model$simulation$exk_dom_4)/Exo_model$simulation$exk_dom_4*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_5 - Exo_model$simulation$exk_dom_5)/Exo_model$simulation$exk_dom_5*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_6 - Exo_model$simulation$exk_dom_6)/Exo_model$simulation$exk_dom_6*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_7 - Exo_model$simulation$exk_dom_7)/Exo_model$simulation$exk_dom_7*100,start= c(2020,1)), col = "pink", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_8 - Exo_model$simulation$exk_dom_8)/Exo_model$simulation$exk_dom_8*100,start= c(2020,1)), col = "darkgreen", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$exk_dom_9 - Exo_model$simulation$exk_dom_9)/Exo_model$simulation$exk_dom_9*100,start= c(2020,1)), col = "darkblue", lwd=3, xlab="");
+legend("bottomleft",legend=c("Industry 1 (Agriculture/Forresty/Fishery)", "Industry 2 (Mining)","Industry 3 (Production of meat and fish)","Industry 4 (Production of Diary)","Industry 5 (production of bread)","Industry 6 (production of other food)","Industry 7 (Energy inten.)","Industry 8 (Energy production)","Industry 9 (other industries)"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink", "darkgreen", "darkblue"),cex=1.2); grid()
+
+
+
+
+plot(window((Exo_model_S2$simulation$phi_c_oth - Exo_model$simulation$phi_c_oth)*100,start= c(2020,1)), col= "red", ylab= "Change in percentage points from baseline" , main= "Import shares of final consumption: Scenario 2 (Production tax)", lwd=3, ylim= c(-0,1), cex.main=1.5);
+lines(window((Exo_model_S2$simulation$phi_c_110 - Exo_model$simulation$phi_c_110)*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S2$simulation$phi_c_120 - Exo_model$simulation$phi_c_120)*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$phi_c_130 - Exo_model$simulation$phi_c_130)*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$phi_c_140 - Exo_model$simulation$phi_c_140)*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$phi_c_160 - Exo_model$simulation$phi_c_160)*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$phi_c_180 - Exo_model$simulation$phi_c_180)*100,start= c(2020,1)), col = "pink", lwd=3, xlab="");
+legend("topleft",legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Diary consumption","Fruit and vegetable consumption","Other food consumption"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink"),cex=1.2); grid()
+
+
+
+
+plot(window(zk_im_1_tot_S2/zk_1_tot_S2*100 - zk_im_1_tot_BS/zk_1_tot_BS*100,start= c(2020,1)), col= "red", ylab= "Change in percentage points from baseline" , main= "Import shares of inputs: Scenario 2 (Production tax)", lwd=3, ylim= c(-0.1,1.1), cex.main=1.5);
+lines(window(zk_im_2_tot_S2/zk_2_tot_S2*100 - zk_im_2_tot_BS/zk_2_tot_BS*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window(zk_im_3_tot_S2/zk_3_tot_S2*100 - zk_im_3_tot_BS/zk_3_tot_BS*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window(zk_im_4_tot_S2/zk_4_tot_S2*100 - zk_im_4_tot_BS/zk_4_tot_BS*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window(zk_im_5_tot_S2/zk_5_tot_S2*100 - zk_im_5_tot_BS/zk_5_tot_BS*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window(zk_im_6_tot_S2/zk_6_tot_S2*100 - zk_im_6_tot_BS/zk_6_tot_BS*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window(zk_im_7_tot_S2/zk_7_tot_S2*100 - zk_im_7_tot_BS/zk_7_tot_BS*100,start= c(2020,1)), col = "pink", lwd=3, xlab="");
+lines(window(zk_im_8_tot_S2/zk_8_tot_S2*100 - zk_im_8_tot_BS/zk_8_tot_BS*100,start= c(2020,1)), col = "darkgreen", lwd=3, xlab="");
+lines(window(zk_im_9_tot_S2/zk_9_tot_S2*100 - zk_im_9_tot_BS/zk_9_tot_BS*100,start= c(2020,1)), col = "darkblue", lwd=3, xlab="");
+legend("topleft",legend=c("Industry 1 (Agriculture/Forresty/Fishery)", "Industry 2 (Mining)","Industry 3 (Production of meat and fish)","Industry 4 (Production of Diary)","Industry 5 (production of bread)","Industry 6 (production of other food)","Industry 7 (Energy inten.)","Industry 8 (Energy production)","Industry 9 (other industries)"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink", "darkgreen", "darkblue"),cex=1.2); grid()
+
+
+
+
+
+# Adding a collective title for both plots
+mtext("Effect on international trade Scenario 2 (Production tax)", side = 3, outer = TRUE, line = 1, cex = 1.5)
+
+```
+
+
+
+
+**Figure 7: Nominal profits and the profit share  **
+
+```{r, fig.width=16, fig.height=12}
+
+
+
+# Layout: 2 top plots, 1 wide bottom plot
+layout(matrix(c(1,2,
+                3,3), nrow=2, byrow=TRUE), heights=c(1.2,1.1))
+
+# Set outer margins
+par(oma = c(0, 0, 4, 0))  
+
+theme_journal()
+
+
+
+### --- Second plot (top right) ---
+par(mar=c(5,5,4,2))  # standard margins
+plot(window((Exo_model_S1$simulation$b2_1 - Exo_model$simulation$b2_1)/Exo_model$simulation$b2_1*100, start=c(2020,1)),
+     ylim=c(-4,2), col="red", ylab="Percentage change from baseline", 
+     main="Nominal Profit: Scenario 1 (Consumption-tax)", lwd=3, xlab="", cex.main=1.5)
+lines(window((Exo_model_S1$simulation$b2_2 - Exo_model$simulation$b2_2)/Exo_model$simulation$b2_2*100, start=c(2020,1)), col="blue", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_3 - Exo_model$simulation$b2_3)/Exo_model$simulation$b2_3*100, start=c(2020,1)), col="green", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_4 - Exo_model$simulation$b2_4)/Exo_model$simulation$b2_4*100, start=c(2020,1)), col="black", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_5 - Exo_model$simulation$b2_5)/Exo_model$simulation$b2_5*100, start=c(2020,1)), col="orange", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_6 - Exo_model$simulation$b2_6)/Exo_model$simulation$b2_6*100, start=c(2020,1)), col="yellow", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_7 - Exo_model$simulation$b2_7)/Exo_model$simulation$b2_7*100, start=c(2020,1)), col="pink", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_8 - Exo_model$simulation$b2_8)/Exo_model$simulation$b2_8*100, start=c(2020,1)), col="darkgreen", lwd=3)
+lines(window((Exo_model_S1$simulation$b2_9 - Exo_model$simulation$b2_9)/Exo_model$simulation$b2_9*100, start=c(2020,1)), col="darkblue", lwd=3)
+legend("bottomleft",
+       legend=c("Industry 1 (Agriculture/Forestry/Fishery)", "Industry 2 (Mining)", 
+                "Industry 3 (Production of meat and fish)", "Industry 4 (Production of Dairy)", 
+                "Industry 5 (Production of bread)", "Industry 6 (Production of other food)", 
+                "Industry 7 (Energy intensive)", "Industry 8 (Energy production)", 
+                "Industry 9 (Other industries)"),
+       lty=1, lwd=2, bty="n", col=c("red", "blue", "green", "black", "orange", "yellow", "pink", "darkgreen", "darkblue"), cex=1.2)
+grid()
+
+
+
+### --- First plot (top left) ---
+par(mar=c(5,5,4,2))  # standard margins
+plot(window((Exo_model_S2$simulation$b2_1 - Exo_model$simulation$b2_1)/Exo_model$simulation$b2_1*100, start=c(2020,1)),
+     ylim=c(-20,2), col="red", ylab="Percentage change from baseline", 
+     main="Nominal Profit: Scenario 2 (Production-tax) ", lwd=3, xlab="", cex.main=1.5)
+lines(window((Exo_model_S2$simulation$b2_2 - Exo_model$simulation$b2_2)/Exo_model$simulation$b2_2*100, start=c(2020,1)), col="blue", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_3 - Exo_model$simulation$b2_3)/Exo_model$simulation$b2_3*100, start=c(2020,1)), col="green", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_4 - Exo_model$simulation$b2_4)/Exo_model$simulation$b2_4*100, start=c(2020,1)), col="black", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_5 - Exo_model$simulation$b2_5)/Exo_model$simulation$b2_5*100, start=c(2020,1)), col="orange", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_6 - Exo_model$simulation$b2_6)/Exo_model$simulation$b2_6*100, start=c(2020,1)), col="yellow", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_7 - Exo_model$simulation$b2_7)/Exo_model$simulation$b2_7*100, start=c(2020,1)), col="pink", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_8 - Exo_model$simulation$b2_8)/Exo_model$simulation$b2_8*100, start=c(2020,1)), col="darkgreen", lwd=3)
+lines(window((Exo_model_S2$simulation$b2_9 - Exo_model$simulation$b2_9)/Exo_model$simulation$b2_9*100, start=c(2020,1)), col="darkblue", lwd=3)
+legend("bottomleft",
+       legend=c("Industry 1 (Agriculture/Forestry/Fishery)", "Industry 2 (Mining)", 
+                "Industry 3 (Production of meat and fish)", "Industry 4 (Production of Dairy)", 
+                "Industry 5 (Production of bread)", "Industry 6 (Production of other food)", 
+                "Industry 7 (Energy intensive)", "Industry 8 (Energy production)", 
+                "Industry 9 (Other industries)"),
+       lty=1, lwd=2, bty="n", col=c("red", "blue", "green", "black", "orange", "yellow", "pink", "darkgreen", "darkblue"), cex=1.2)
+grid()
+
+
+
+### --- Third plot (bottom center) ---
+par(mar=c(5,10,4,10))  # widen margins to shrink plot in center
+plot(window((Exo_model_S1$simulation$ps - Exo_model$simulation$ps)/Exo_model$simulation$ps*100, start=c(2020,1)),
+     col="red", ylab="Percentage change from baseline", 
+     main="Profit share", lwd=3, xlab="", ylim=c(-0.3,0.1), cex.main=1.5)
+lines(window((Exo_model_S2$simulation$ps - Exo_model$simulation$ps)/Exo_model$simulation$ps*100, start=c(2020,1)), col="blue", lwd=3)
+legend("bottomleft", legend=c("Scenario 1: Consumption tax", "Scenario 2: Production tax"), 
+       lty=1, lwd=2, bty="n", col=c("red", "blue"), cex=1.4)
+grid()
+
+### --- Title for the full figure ---
+mtext("Nominal Profits and the Profit share", side=3, outer=TRUE, line=1, cex=1.8)
+
+
+
+```
+
+
+**Figure 8: The effect on financial net wealth in different sectors, comparing the two scenarios.**
+
+```{r, fig.width=16, fig.height=12}
+
+par(mfrow=c(2,2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+# Apply the theme
+theme_journal()
+
+
+plot(window((Exo_model_S1$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Households" ,ylim= c(-0.5,0.2), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+plot(window((Exo_model_S1$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Government" , ylim= c(-0.9,0.9), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+plot(window((Exo_model_S1$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Non-financial corporations" , ylim= c(-0.4,0.4), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+
+plot(window((Exo_model_S1$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Rest of the world" , ylim= c(-1,1), lwd=3, xlab="", cex.main=1.5);lines(window((Exo_model_S2$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");legend("topleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Producer tax"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=1.4); grid()
+
+
+# Adding a collective title for both plots
+mtext("Financial net-wealth", side = 3, outer = TRUE, line = 1, cex = 1.7)
+
+```
+
+
+**Figure 9: Effects on CO2E emissions comparing the two scenarios**
+
+```{r, fig.height=12, fig.width=17}
+par(mfrow = c(2, 2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+
+
+plot(window((Delta_GHG_tot_DK_S1*1000)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "Total CO2-Equivalent emissions", lwd=3, ylim=c(-3,0));
+lines(window(((Delta_GHG_tot_DK_S1 + Delta_GHG_tot_row_S1)*1000)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col = "red", lwd=3,lty=2, xlab="");
+lines(window((Delta_GHG_tot_DK_S2*1000)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+lines(window(((Delta_GHG_tot_DK_S2 + Delta_GHG_tot_row_S2)*1000)/Exo_model$simulation$Co2E_tot*100,start= c(2020,1)), col = "blue", lwd=3,lty=2, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption tax (no carbon leakage)", "Scenario 1: Consumption tax (with carbon leakage)" ,"Scenario 2: Production tax (no carbon leakage)", "Scenario 2: Production tax (with carbon leakage)"),lty=c(1,2,1,2),lwd=c(2),bty="n", col = c("red","red", "blue","blue"), cex=1.1); grid()
+
+
+
+plot(window(Shadow_price_DK_S1,start= c(2020,1)), col= "red", ylab= "Price in DKK for 1 ton CO2E reduction" , main= "Environmental sacrifice ratio", lwd=3, xlab="" ,ylim=c(0,30000), xlim=c(2025,2035) , cex.main=1.5);
+     lines(window(Shadow_price_World_S1,start= c(2020,1)), col = "red", lwd=3,lty=2, xlab="");
+     lines(window(Shadow_price_DK_S2,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+     lines(window(Shadow_price_World_S2,start= c(2020,1)), col = "blue", lwd=3,lty=2, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption tax (no carbon leakage)", "Scenario 1: Consumption tax (with carbon leakage)" ,"Scenario 2: Production tax (no carbon leakage)", "Scenario 2: Production tax (with carbon leakage)"),lty=c(1,2,1,2),lwd=c(2),bty="n", col = c("red","red", "blue","blue"), cex=1.1); grid()
+
+
+plot(window((Exo_model_S1$simulation$Co2E_1 - Exo_model$simulation$Co2E_1)/Exo_model$simulation$Co2E_1*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "CO2-Equivalent emissions: Scenario 1 (Consumption tax)", lwd=3, ylim= c(-2,4));
+lines(window((Exo_model_S1$simulation$Co2E_2 - Exo_model$simulation$Co2E_2)/Exo_model$simulation$Co2E_2*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S1$simulation$Co2E_3 - Exo_model$simulation$Co2E_3)/Exo_model$simulation$Co2E_3*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_4 - Exo_model$simulation$Co2E_4)/Exo_model$simulation$Co2E_4*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_5 - Exo_model$simulation$Co2E_5)/Exo_model$simulation$Co2E_5*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_6 - Exo_model$simulation$Co2E_6)/Exo_model$simulation$Co2E_6*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_7 - Exo_model$simulation$Co2E_7)/Exo_model$simulation$Co2E_7*100,start= c(2020,1)), col = "pink", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_8 - Exo_model$simulation$Co2E_8)/Exo_model$simulation$Co2E_8*100,start= c(2020,1)), col = "darkgreen", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_9 - Exo_model$simulation$Co2E_9)/Exo_model$simulation$Co2E_9*100,start= c(2020,1)), col = "darkblue", lwd=3, xlab="");
+lines(window((Exo_model_S1$simulation$Co2E_HH - Exo_model$simulation$Co2E_HH)/Exo_model$simulation$Co2E_HH*100,start= c(2020,1)), col = "darkred", lwd=3, xlab="");
+legend("topleft",legend=c("Industry 1 (Agriculture/Forresty/Fishery)", "Industry 2 (Mining)","Industry 3 (Production of meat and fish)","Industry 4 (Production of Diary)","Industry 5 (production of bread)","Industry 6 (production of other food)","Industry 7 (Energy inten.)","Industry 8 (Energy production)","Industry 9 (other industries)"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink", "darkgreen", "darkblue"),cex=1.2); grid()
+
+
+plot(window((Exo_model_S2$simulation$Co2E_1 - Exo_model$simulation$Co2E_1)/Exo_model$simulation$Co2E_1*100,start= c(2020,1)), col= "red", ylab= "Percentage change from baseline" , main= "CO2-Equivalent emissions: Scenario 2 (Production tax)", lwd=3, ylim= c(-8,7));
+lines(window((Exo_model_S2$simulation$Co2E_2 - Exo_model$simulation$Co2E_2)/Exo_model$simulation$Co2E_2*100,start= c(2020,1)), col = "blue", lwd=3, xlab=""); 
+lines(window((Exo_model_S2$simulation$Co2E_3 - Exo_model$simulation$Co2E_3)/Exo_model$simulation$Co2E_3*100,start= c(2020,1)), col = "green", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_4 - Exo_model$simulation$Co2E_4)/Exo_model$simulation$Co2E_4*100,start= c(2020,1)), col = "black", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_5 - Exo_model$simulation$Co2E_5)/Exo_model$simulation$Co2E_5*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_6 - Exo_model$simulation$Co2E_6)/Exo_model$simulation$Co2E_6*100,start= c(2020,1)), col = "yellow", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_7 - Exo_model$simulation$Co2E_7)/Exo_model$simulation$Co2E_7*100,start= c(2020,1)), col = "pink", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_8 - Exo_model$simulation$Co2E_8)/Exo_model$simulation$Co2E_8*100,start= c(2020,1)), col = "darkgreen", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_9 - Exo_model$simulation$Co2E_9)/Exo_model$simulation$Co2E_9*100,start= c(2020,1)), col = "darkblue", lwd=3, xlab="");
+lines(window((Exo_model_S2$simulation$Co2E_HH - Exo_model$simulation$Co2E_HH)/Exo_model$simulation$Co2E_HH*100,start= c(2020,1)), col = "darkred", lwd=3, xlab="");
+legend("topleft",legend=c("Industry 1 (Agriculture/Forresty/Fishery)", "Industry 2 (Mining)","Industry 3 (Production of meat and fish)","Industry 4 (Production of Diary)","Industry 5 (production of bread)","Industry 6 (production of other food)","Industry 7 (Energy inten.)","Industry 8 (Energy production)","Industry 9 (other industries)"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue","green", "black","orange", "yellow", "pink", "darkgreen", "darkblue"),cex=1.2); grid()
+
+
+
+
+# Adding a collective title for both plots
+mtext("Effects on CO2-Equivalent emissions", side = 3, outer = TRUE, line = 1, cex = 1.5)
+
+```
+
+
+
+
+
+**Figure 10 Financial net wealth for different sectors allowing for recycling of the government surplus**
+
+```{r, fig.width=16, fig.height=12}
+
+par(mfrow=c(2,2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+# Apply the theme
+theme_journal()
+
+
+plot(window((Exo_model_S1$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Households" ,ylim= c(-0.5,0.5), lwd=3, xlab="", cex.main=1.5);
+     lines(window((Exo_model_S2$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+lines(window((Exo_model_S3$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S3$simulation$yk*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+     lines(window((Exo_model_S4$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S4$simulation$yk*100,start= c(2020,1)), col = "green", lwd=3, xlab="");legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+plot(window((Exo_model_S1$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Government" , ylim= c(-1.2,1.2), lwd=3, xlab="", cex.main=1.5);
+     lines(window((Exo_model_S2$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+lines(window((Exo_model_S3$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S3$simulation$yk*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+     lines(window((Exo_model_S4$simulation$fnw_g - Exo_model$simulation$fnw_g)/Exo_model_S4$simulation$yk*100,start= c(2020,1)), col = "green", lwd=3, xlab=""); legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+
+plot(window((Exo_model_S1$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Non-financial corporations", ylim= c(-0.5,0.5), lwd=3, xlab="", cex.main=1.5);
+     lines(window((Exo_model_S2$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+lines(window((Exo_model_S3$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S3$simulation$yk*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+     lines(window((Exo_model_S4$simulation$fnw_nfc - Exo_model$simulation$fnw_nfc)/Exo_model_S4$simulation$yk*100,start= c(2020,1)), col = "green", lwd=3, xlab="");legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+
+
+plot(window((Exo_model_S1$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S1$simulation$yk*100,start= c(2020,1)), col= "red", ylab= "Change from baseline (Percentage of GDP)" , main= "Financial net wealth Rest of the world" , ylim= c(-1.0,1), lwd=3, xlab="", cex.main=1.5);
+     lines(window((Exo_model_S2$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S2$simulation$yk*100,start= c(2020,1)), col = "blue", lwd=3, xlab="");
+lines(window((Exo_model_S3$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S3$simulation$yk*100,start= c(2020,1)), col = "orange", lwd=3, xlab="");
+     lines(window((Exo_model_S4$simulation$fnw_row - Exo_model$simulation$fnw_row)/Exo_model_S4$simulation$yk*100,start= c(2020,1)), col = "green", lwd=3, xlab="");legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+
+
+# Adding a collective title for both plots
+mtext("Financial net-wealth", side = 3, outer = TRUE, line = 1, cex = 1.7)
+
+```
+
+
+
+**Figure 11: Development of the environmental sacrifice ratio when considering recycling of government surplus and carbon leakage.**
+
+```{r, fig.height=7, fig.width=15}
+par(mfrow=c(1,2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+# Apply the theme
+theme_journal()
+
+plot(window(Shadow_price_World_S1, start= c(2026,1)), col= "red", ylab= "Price in DKK for 1 ton CO2E reduction" , main= "Environmental sacrifice ratio", lwd=3, xlab="" ,ylim=c(0,29000), xlim=c(2026,2035) , cex.main=1.5);
+lines(window(Shadow_price_World_S2, start= c(2026,1)), col = "blue", lwd=3, xlab="");
+lines(window(Shadow_price_World_S3, start= c(2026,1)), col = "orange", lwd=3, xlab="");
+lines(window(Shadow_price_World_S4, start= c(2026,1)), col = "green", lwd=3, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+
+plot(window(Delta_GHG_tot_cusum_world_S1/1000000, start= c(2026,1)), col= "red", ylab= "Mil. ton CO2E" , main= "Cumulative change in CO2E", lwd=3, xlab="" ,ylim= c(-7,0), xlim=c(2026,2035) , cex.main=1.5);
+lines(window(Delta_GHG_tot_cusum_world_S2/1000000, start= c(2026,1)), col = "blue", lwd=3, xlab="");
+lines(window(Delta_GHG_tot_cusum_world_S3/1000000, start= c(2026,1)), col = "orange", lwd=3, xlab="");
+lines(window(Delta_GHG_tot_cusum_world_S4/1000000, start= c(2026,1)), col = "green", lwd=3, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+# Adding a collective title for both plots
+mtext("Environmental sacrifice ratio & Cumulative emissions (including carbon leakage)", side = 3, outer = TRUE, line = 1, cex = 1.7)
+
+```
+
+
+
+
+# Sensitivity analysis
+
+
+## Baseline
+
+```{r}
+Sens_1_shock= S_modelData$Sens_1 %>% window(start= c(2000,1)) # Lowering Substitution elasticities in final consumption
+Sens_2_shock= S_modelData$Sens_2 %>% window(start= c(2000,1)) # Increasing Substitution elasticities in final consumption
+Sens_3_shock= S_modelData$Sens_3 %>% window(start= c(2000,1)) # Lowering export and import elasticities
+Sens_4_shock= S_modelData$Sens_4 %>% window(start= c(2000,1)) # Increasing export and import elasticities
+```
+
+
+Depending on what sensitivity analysis you want to run, adjust the "Sens_4" and "Sens_4_shock" for the baseline and each scenario.
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_sens <- list(
+  
+Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_sens1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,verbose = F
+                    ,ConstantAdjustment=constantAdjList_sens
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r, fig.width=20, fig.height=15}
+
+par(mfrow = c(3, 3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+theme_journal()
+
+plot(Exo_model_sens1$simulation$Xk_dom_1, col= "red", ylab= "B. DKR" , main= "Agriculture/Forresty/Fishery", lwd=3, xlab="" , ylim= c(66,90) , cex.main=2); lines(S_modelData$Xk_dom_1, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_2, col= "red", ylab= "B. DKR" , main= "Mining", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_2, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("bottomleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_3, col= "red", ylab= "B. DKR" , main= "Production of meat and fish", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_3, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_4, col= "red", ylab= "B. DKR" , main= "Production of Dairy", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_4, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_5, col= "red", ylab= "B. DKR" , main= "Production of bread", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_5, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_6, col= "red", ylab= "B. DKR" , main= "Production of other food", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_6, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_7, col= "red", ylab= "B. DKR" , main= "Energy intensive industries", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_7, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_8, col= "red", ylab= "B. DKR" , main= "Energy production", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_8, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("bottomleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens1$simulation$Xk_dom_9, col= "red", ylab= "B. DKR" , main= "Other industries", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_9, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+# Adding a collective title for both plots
+mtext("Real sales in the nine industries", side = 3, outer = TRUE, line = 1, cex = 1.5)
+
+```
+
+
+
+
+## Scenario 1
+
+
+
+```{r}
+
+Scenario_1_shock= S_modelData$Scenario_1 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s1_sens1 <- list(
+  
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S1_sens1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s1_sens1
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S1_sens1$simulation$check_nl 
+Exo_model_S1_sens1$simulation$check_sec
+Exo_model_S1_sens1$simulation$check_np
+Exo_model_S1_sens1$simulation$check_neq
+Exo_model_S1_sens1$simulation$check_ctr
+Exo_model_S1_sens1$simulation$check_invest
+Exo_model_S1_sens1$simulation$check_tax
+Exo_model_S1_sens1$simulation$check_neq
+
+
+```
+
+
+
+
+## Scenario 2
+
+```{r}
+
+Scenario_2_shock= S_modelData$Scenario_2 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s2_sens1 <- list(
+
+Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S2_sens1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s2_sens1
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S2_sens1$simulation$check_nl 
+Exo_model_S2_sens1$simulation$check_sec
+Exo_model_S2_sens1$simulation$check_np
+Exo_model_S2_sens1$simulation$check_ctr
+Exo_model_S2_sens1$simulation$check_invest
+Exo_model_S2_sens1$simulation$check_tax
+
+
+
+```
+
+
+
+
+
+
+## Scenario 3
+
+```{r}
+
+Scenario_3_shock= S_modelData$Scenario_3 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s3_sens1 <- list(
+
+Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_3 = TIMESERIES(Scenario_3_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S3_sens1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s3_sens1
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S3_sens1$simulation$check_nl 
+Exo_model_S3_sens1$simulation$check_sec
+Exo_model_S3_sens1$simulation$check_np
+Exo_model_S3_sens1$simulation$check_ctr
+Exo_model_S3_sens1$simulation$check_invest
+Exo_model_S3_sens1$simulation$check_tax
+
+
+
+```
+
+
+
+
+
+
+## Scenario 4
+
+```{r}
+
+Scenario_4_shock= S_modelData$Scenario_4 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s4_sens1 <- list(
+  
+Scenario_4 = TIMESERIES(Scenario_4_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S4_sens1 <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s4_sens1
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S4_sens1$simulation$check_nl 
+Exo_model_S4_sens1$simulation$check_sec
+Exo_model_S4_sens1$simulation$check_np
+Exo_model_S4_sens1$simulation$check_ctr
+Exo_model_S4_sens1$simulation$check_invest
+Exo_model_S4_sens1$simulation$check_tax
+
+```
+
+
+
+## Discussion & Carbon leakage
+
+
+We should calculate the change in exports and imports
+
+
+### S1
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_1*1000 - Exo_model_sens1$simulation$exk_1*1000 
+exk_2_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_2*1000 - Exo_model_sens1$simulation$exk_2*1000
+exk_3_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_3*1000 - Exo_model_sens1$simulation$exk_3*1000
+exk_4_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_4*1000 - Exo_model_sens1$simulation$exk_4*1000
+exk_5_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_5*1000 - Exo_model_sens1$simulation$exk_5*1000
+exk_6_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_6*1000 - Exo_model_sens1$simulation$exk_6*1000
+exk_7_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_7*1000 - Exo_model_sens1$simulation$exk_7*1000
+exk_8_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_8*1000 - Exo_model_sens1$simulation$exk_8*1000
+exk_9_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$exk_9*1000 - Exo_model_sens1$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S1_sens1= exk_1_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S1_sens1= exk_2_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S1_sens1= exk_3_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S1_sens1= exk_4_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S1_sens1= exk_5_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S1_sens1= exk_6_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S1_sens1= exk_7_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S1_sens1= exk_8_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S1_sens1= exk_9_tot_S1_Delta_sens1*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S1_sens1=Delta_GHG_ex_row_1_S1_sens1 + Delta_GHG_ex_row_2_S1_sens1 + Delta_GHG_ex_row_3_S1_sens1 + Delta_GHG_ex_row_4_S1_sens1 + Delta_GHG_ex_row_5_S1_sens1 + Delta_GHG_ex_row_6_S1_sens1 + Delta_GHG_ex_row_7_S1_sens1 + Delta_GHG_ex_row_8_S1_sens1 + Delta_GHG_ex_row_9_S1_sens1
+
+# Carbon leakage through imports
+
+imk_1_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_1*1000 - Exo_model_sens1$simulation$Xk_im_1*1000
+imk_2_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_2*1000 - Exo_model_sens1$simulation$Xk_im_2*1000
+imk_3_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_3*1000 - Exo_model_sens1$simulation$Xk_im_3*1000
+imk_4_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_4*1000 - Exo_model_sens1$simulation$Xk_im_4*1000
+imk_5_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_5*1000 - Exo_model_sens1$simulation$Xk_im_5*1000
+imk_6_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_6*1000 - Exo_model_sens1$simulation$Xk_im_6*1000
+imk_7_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_7*1000 - Exo_model_sens1$simulation$Xk_im_7*1000
+imk_8_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_8*1000 - Exo_model_sens1$simulation$Xk_im_8*1000
+imk_9_tot_S1_Delta_sens1= Exo_model_S1_sens1$simulation$Xk_im_9*1000 - Exo_model_sens1$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S1_sens1= imk_1_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S1_sens1= imk_2_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S1_sens1= imk_3_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S1_sens1= imk_4_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S1_sens1= imk_5_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S1_sens1= imk_6_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S1_sens1= imk_7_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S1_sens1= imk_8_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S1_sens1= imk_9_tot_S1_Delta_sens1*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S1_sens1=Delta_GHG_im_row_1_S1_sens1 + Delta_GHG_im_row_2_S1_sens1 + Delta_GHG_im_row_3_S1_sens1 + Delta_GHG_im_row_4_S1_sens1 + Delta_GHG_im_row_5_S1_sens1 + Delta_GHG_im_row_6_S1_sens1 + Delta_GHG_im_row_7_S1_sens1  + Delta_GHG_im_row_8_S1_sens1 + Delta_GHG_im_row_9_S1_sens1
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S1_sens1 = Delta_GHG_ex_row_1_S1_sens1 + Delta_GHG_im_row_1_S1_sens1
+Delta_GHG_2_row_S1_sens1 = Delta_GHG_ex_row_2_S1_sens1 + Delta_GHG_im_row_2_S1_sens1
+Delta_GHG_3_row_S1_sens1 = Delta_GHG_ex_row_3_S1_sens1 + Delta_GHG_im_row_3_S1_sens1
+Delta_GHG_4_row_S1_sens1 = Delta_GHG_ex_row_4_S1_sens1 + Delta_GHG_im_row_4_S1_sens1
+Delta_GHG_5_row_S1_sens1 = Delta_GHG_ex_row_5_S1_sens1 + Delta_GHG_im_row_5_S1_sens1
+Delta_GHG_6_row_S1_sens1 = Delta_GHG_ex_row_6_S1_sens1 + Delta_GHG_im_row_6_S1_sens1
+Delta_GHG_7_row_S1_sens1 = Delta_GHG_ex_row_7_S1_sens1 + Delta_GHG_im_row_7_S1_sens1
+Delta_GHG_8_row_S1_sens1 = Delta_GHG_ex_row_8_S1_sens1 + Delta_GHG_im_row_8_S1_sens1
+Delta_GHG_9_row_S1_sens1 = Delta_GHG_ex_row_9_S1_sens1 + Delta_GHG_im_row_9_S1_sens1
+
+
+
+Delta_GHG_tot_row_S1_sens1 = Delta_GHG_tot_ex_S1_sens1 + Delta_GHG_tot_im_S1_sens1
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S1_sens1=cumsum(Delta_GHG_1_row_S1_sens1)
+Delta_GHG_2_cusum_row_S1_sens1=cumsum(Delta_GHG_2_row_S1_sens1)
+Delta_GHG_3_cusum_row_S1_sens1=cumsum(Delta_GHG_3_row_S1_sens1)
+Delta_GHG_4_cusum_row_S1_sens1=cumsum(Delta_GHG_4_row_S1_sens1)
+Delta_GHG_5_cusum_row_S1_sens1=cumsum(Delta_GHG_5_row_S1_sens1)
+Delta_GHG_6_cusum_row_S1_sens1=cumsum(Delta_GHG_6_row_S1_sens1)
+Delta_GHG_7_cusum_row_S1_sens1=cumsum(Delta_GHG_7_row_S1_sens1)
+Delta_GHG_8_cusum_row_S1_sens1=cumsum(Delta_GHG_8_row_S1_sens1)
+Delta_GHG_9_cusum_row_S1_sens1=cumsum(Delta_GHG_9_row_S1_sens1)
+
+Delta_GHG_tot_cusum_row_S1_sens1=cumsum(Delta_GHG_tot_row_S1_sens1)
+```
+
+We calculate the change in emission for Denmark.
+
+```{r}
+
+Delta_GHG_1_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_1/1000 - Exo_model_sens1$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_2/1000 - Exo_model_sens1$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_3/1000 - Exo_model_sens1$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_4/1000 - Exo_model_sens1$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_5/1000 - Exo_model_sens1$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_6/1000 - Exo_model_sens1$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_7/1000 - Exo_model_sens1$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_8/1000 - Exo_model_sens1$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_9/1000 - Exo_model_sens1$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S1_sens1= Exo_model_S1_sens1$simulation$Co2E_HH/1000 - Exo_model_sens1$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S1_sens1 =Exo_model_S1_sens1$simulation$Co2E_tot/1000 - Exo_model_sens1$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S1_sens1=cumsum(Delta_GHG_tot_DK_S1_sens1)
+```
+
+
+
+
+### S2
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_1*1000 - Exo_model_sens1$simulation$exk_1*1000 
+exk_2_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_2*1000 - Exo_model_sens1$simulation$exk_2*1000
+exk_3_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_3*1000 - Exo_model_sens1$simulation$exk_3*1000
+exk_4_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_4*1000 - Exo_model_sens1$simulation$exk_4*1000
+exk_5_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_5*1000 - Exo_model_sens1$simulation$exk_5*1000
+exk_6_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_6*1000 - Exo_model_sens1$simulation$exk_6*1000
+exk_7_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_7*1000 - Exo_model_sens1$simulation$exk_7*1000
+exk_8_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_8*1000 - Exo_model_sens1$simulation$exk_8*1000
+exk_9_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$exk_9*1000 - Exo_model_sens1$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S2_sens1= exk_1_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S2_sens1= exk_2_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S2_sens1= exk_3_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S2_sens1= exk_4_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S2_sens1= exk_5_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S2_sens1= exk_6_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S2_sens1= exk_7_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S2_sens1= exk_8_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S2_sens1= exk_9_tot_S2_Delta_sens1*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S2_sens1=Delta_GHG_ex_row_1_S2_sens1 + Delta_GHG_ex_row_2_S2_sens1 + Delta_GHG_ex_row_3_S2_sens1 + Delta_GHG_ex_row_4_S2_sens1 + Delta_GHG_ex_row_5_S2_sens1 + Delta_GHG_ex_row_6_S2_sens1 + Delta_GHG_ex_row_7_S2_sens1 + Delta_GHG_ex_row_8_S2_sens1 + Delta_GHG_ex_row_9_S2_sens1
+
+# Carbon leakage through imports
+
+imk_1_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_1*1000 - Exo_model_sens1$simulation$Xk_im_1*1000
+imk_2_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_2*1000 - Exo_model_sens1$simulation$Xk_im_2*1000
+imk_3_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_3*1000 - Exo_model_sens1$simulation$Xk_im_3*1000
+imk_4_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_4*1000 - Exo_model_sens1$simulation$Xk_im_4*1000
+imk_5_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_5*1000 - Exo_model_sens1$simulation$Xk_im_5*1000
+imk_6_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_6*1000 - Exo_model_sens1$simulation$Xk_im_6*1000
+imk_7_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_7*1000 - Exo_model_sens1$simulation$Xk_im_7*1000
+imk_8_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_8*1000 - Exo_model_sens1$simulation$Xk_im_8*1000
+imk_9_tot_S2_Delta_sens1= Exo_model_S2_sens1$simulation$Xk_im_9*1000 - Exo_model_sens1$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S2_sens1= imk_1_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S2_sens1= imk_2_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S2_sens1= imk_3_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S2_sens1= imk_4_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S2_sens1= imk_5_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S2_sens1= imk_6_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S2_sens1= imk_7_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S2_sens1= imk_8_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S2_sens1= imk_9_tot_S2_Delta_sens1*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S2_sens1=Delta_GHG_im_row_1_S2_sens1 + Delta_GHG_im_row_2_S2_sens1 + Delta_GHG_im_row_3_S2_sens1 + Delta_GHG_im_row_4_S2_sens1 + Delta_GHG_im_row_5_S2_sens1 + Delta_GHG_im_row_6_S2_sens1 + Delta_GHG_im_row_7_S2_sens1  + Delta_GHG_im_row_8_S2_sens1 + Delta_GHG_im_row_9_S2_sens1
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S2_sens1 = Delta_GHG_ex_row_1_S2_sens1 + Delta_GHG_im_row_1_S2_sens1
+Delta_GHG_2_row_S2_sens1 = Delta_GHG_ex_row_2_S2_sens1 + Delta_GHG_im_row_2_S2_sens1
+Delta_GHG_3_row_S2_sens1 = Delta_GHG_ex_row_3_S2_sens1 + Delta_GHG_im_row_3_S2_sens1
+Delta_GHG_4_row_S2_sens1 = Delta_GHG_ex_row_4_S2_sens1 + Delta_GHG_im_row_4_S2_sens1
+Delta_GHG_5_row_S2_sens1 = Delta_GHG_ex_row_5_S2_sens1 + Delta_GHG_im_row_5_S2_sens1
+Delta_GHG_6_row_S2_sens1 = Delta_GHG_ex_row_6_S2_sens1 + Delta_GHG_im_row_6_S2_sens1
+Delta_GHG_7_row_S2_sens1 = Delta_GHG_ex_row_7_S2_sens1 + Delta_GHG_im_row_7_S2_sens1
+Delta_GHG_8_row_S2_sens1 = Delta_GHG_ex_row_8_S2_sens1 + Delta_GHG_im_row_8_S2_sens1
+Delta_GHG_9_row_S2_sens1 = Delta_GHG_ex_row_9_S2_sens1 + Delta_GHG_im_row_9_S2_sens1
+
+
+
+Delta_GHG_tot_row_S2_sens1 = Delta_GHG_tot_ex_S2_sens1 + Delta_GHG_tot_im_S2_sens1
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S2_sens1=cumsum(Delta_GHG_1_row_S2_sens1)
+Delta_GHG_2_cusum_row_S2_sens1=cumsum(Delta_GHG_2_row_S2_sens1)
+Delta_GHG_3_cusum_row_S2_sens1=cumsum(Delta_GHG_3_row_S2_sens1)
+Delta_GHG_4_cusum_row_S2_sens1=cumsum(Delta_GHG_4_row_S2_sens1)
+Delta_GHG_5_cusum_row_S2_sens1=cumsum(Delta_GHG_5_row_S2_sens1)
+Delta_GHG_6_cusum_row_S2_sens1=cumsum(Delta_GHG_6_row_S2_sens1)
+Delta_GHG_7_cusum_row_S2_sens1=cumsum(Delta_GHG_7_row_S2_sens1)
+Delta_GHG_8_cusum_row_S2_sens1=cumsum(Delta_GHG_8_row_S2_sens1)
+Delta_GHG_9_cusum_row_S2_sens1=cumsum(Delta_GHG_9_row_S2_sens1)
+
+Delta_GHG_tot_cusum_row_S2_sens1=cumsum(Delta_GHG_tot_row_S2_sens1)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_1/1000 - Exo_model_sens1$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_2/1000 - Exo_model_sens1$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_3/1000 - Exo_model_sens1$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_4/1000 - Exo_model_sens1$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_5/1000 - Exo_model_sens1$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_6/1000 - Exo_model_sens1$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_7/1000 - Exo_model_sens1$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_8/1000 - Exo_model_sens1$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_9/1000 - Exo_model_sens1$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S2_sens1= Exo_model_S2_sens1$simulation$Co2E_HH/1000 - Exo_model_sens1$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S2_sens1 =Exo_model_S2_sens1$simulation$Co2E_tot/1000 - Exo_model_sens1$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S2_sens1=cumsum(Delta_GHG_tot_DK_S2_sens1)
+```
+
+
+
+
+### S5
+
+We multiply by 1000 as the coefficients are based on millions DKK
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_1*1000 - Exo_model_sens1$simulation$exk_1*1000 
+exk_2_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_2*1000 - Exo_model_sens1$simulation$exk_2*1000
+exk_3_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_3*1000 - Exo_model_sens1$simulation$exk_3*1000
+exk_4_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_4*1000 - Exo_model_sens1$simulation$exk_4*1000
+exk_5_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_5*1000 - Exo_model_sens1$simulation$exk_5*1000
+exk_6_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_6*1000 - Exo_model_sens1$simulation$exk_6*1000
+exk_7_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_7*1000 - Exo_model_sens1$simulation$exk_7*1000
+exk_8_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_8*1000 - Exo_model_sens1$simulation$exk_8*1000
+exk_9_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$exk_9*1000 - Exo_model_sens1$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S3_sens1= exk_1_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S3_sens1= exk_2_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S3_sens1= exk_3_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S3_sens1= exk_4_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S3_sens1= exk_5_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S3_sens1= exk_6_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S3_sens1= exk_7_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S3_sens1= exk_8_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S3_sens1= exk_9_tot_S3_Delta_sens1*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S3_sens1=Delta_GHG_ex_row_1_S3_sens1 + Delta_GHG_ex_row_2_S3_sens1 + Delta_GHG_ex_row_3_S3_sens1 + Delta_GHG_ex_row_4_S3_sens1 + Delta_GHG_ex_row_5_S3_sens1 + Delta_GHG_ex_row_6_S3_sens1 + Delta_GHG_ex_row_7_S3_sens1 + Delta_GHG_ex_row_8_S3_sens1 + Delta_GHG_ex_row_9_S3_sens1
+
+# Carbon leakage through imports
+
+imk_1_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_1*1000 - Exo_model_sens1$simulation$Xk_im_1*1000
+imk_2_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_2*1000 - Exo_model_sens1$simulation$Xk_im_2*1000
+imk_3_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_3*1000 - Exo_model_sens1$simulation$Xk_im_3*1000
+imk_4_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_4*1000 - Exo_model_sens1$simulation$Xk_im_4*1000
+imk_5_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_5*1000 - Exo_model_sens1$simulation$Xk_im_5*1000
+imk_6_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_6*1000 - Exo_model_sens1$simulation$Xk_im_6*1000
+imk_7_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_7*1000 - Exo_model_sens1$simulation$Xk_im_7*1000
+imk_8_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_8*1000 - Exo_model_sens1$simulation$Xk_im_8*1000
+imk_9_tot_S3_Delta_sens1= Exo_model_S3_sens1$simulation$Xk_im_9*1000 - Exo_model_sens1$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S3_sens1= imk_1_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S3_sens1= imk_2_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S3_sens1= imk_3_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S3_sens1= imk_4_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S3_sens1= imk_5_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S3_sens1= imk_6_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S3_sens1= imk_7_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S3_sens1= imk_8_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S3_sens1= imk_9_tot_S3_Delta_sens1*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S3_sens1=Delta_GHG_im_row_1_S3_sens1 + Delta_GHG_im_row_2_S3_sens1 + Delta_GHG_im_row_3_S3_sens1 + Delta_GHG_im_row_4_S3_sens1 + Delta_GHG_im_row_5_S3_sens1 + Delta_GHG_im_row_6_S3_sens1 + Delta_GHG_im_row_7_S3_sens1  + Delta_GHG_im_row_8_S3_sens1 + Delta_GHG_im_row_9_S3_sens1
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S3_sens1 = Delta_GHG_ex_row_1_S3_sens1 + Delta_GHG_im_row_1_S3_sens1
+Delta_GHG_2_row_S3_sens1 = Delta_GHG_ex_row_2_S3_sens1 + Delta_GHG_im_row_2_S3_sens1
+Delta_GHG_3_row_S3_sens1 = Delta_GHG_ex_row_3_S3_sens1 + Delta_GHG_im_row_3_S3_sens1
+Delta_GHG_4_row_S3_sens1 = Delta_GHG_ex_row_4_S3_sens1 + Delta_GHG_im_row_4_S3_sens1
+Delta_GHG_5_row_S3_sens1 = Delta_GHG_ex_row_5_S3_sens1 + Delta_GHG_im_row_5_S3_sens1
+Delta_GHG_6_row_S3_sens1 = Delta_GHG_ex_row_6_S3_sens1 + Delta_GHG_im_row_6_S3_sens1
+Delta_GHG_7_row_S3_sens1 = Delta_GHG_ex_row_7_S3_sens1 + Delta_GHG_im_row_7_S3_sens1
+Delta_GHG_8_row_S3_sens1 = Delta_GHG_ex_row_8_S3_sens1 + Delta_GHG_im_row_8_S3_sens1
+Delta_GHG_9_row_S3_sens1 = Delta_GHG_ex_row_9_S3_sens1 + Delta_GHG_im_row_9_S3_sens1
+
+
+
+Delta_GHG_tot_row_S3_sens1 = Delta_GHG_tot_ex_S3_sens1 + Delta_GHG_tot_im_S3_sens1
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S3_sens1=cumsum(Delta_GHG_1_row_S3_sens1)
+Delta_GHG_2_cusum_row_S3_sens1=cumsum(Delta_GHG_2_row_S3_sens1)
+Delta_GHG_3_cusum_row_S3_sens1=cumsum(Delta_GHG_3_row_S3_sens1)
+Delta_GHG_4_cusum_row_S3_sens1=cumsum(Delta_GHG_4_row_S3_sens1)
+Delta_GHG_5_cusum_row_S3_sens1=cumsum(Delta_GHG_5_row_S3_sens1)
+Delta_GHG_6_cusum_row_S3_sens1=cumsum(Delta_GHG_6_row_S3_sens1)
+Delta_GHG_7_cusum_row_S3_sens1=cumsum(Delta_GHG_7_row_S3_sens1)
+Delta_GHG_8_cusum_row_S3_sens1=cumsum(Delta_GHG_8_row_S3_sens1)
+Delta_GHG_9_cusum_row_S3_sens1=cumsum(Delta_GHG_9_row_S3_sens1)
+
+Delta_GHG_tot_cusum_row_S3_sens1=cumsum(Delta_GHG_tot_row_S3_sens1)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_1/1000 - Exo_model_sens1$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_2/1000 - Exo_model_sens1$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_3/1000 - Exo_model_sens1$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_4/1000 - Exo_model_sens1$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_5/1000 - Exo_model_sens1$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_6/1000 - Exo_model_sens1$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_7/1000 - Exo_model_sens1$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_8/1000 - Exo_model_sens1$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_9/1000 - Exo_model_sens1$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S3_sens1= Exo_model_S3_sens1$simulation$Co2E_HH/1000 - Exo_model_sens1$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S3_sens1 =Exo_model_S3_sens1$simulation$Co2E_tot/1000 - Exo_model_sens1$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S3_sens1=cumsum(Delta_GHG_tot_DK_S3_sens1)
+```
+
+
+
+
+
+### S4
+
+We multiply by 1000 as the coefficients are based on millions DKK
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_1*1000 - Exo_model_sens1$simulation$exk_1*1000 
+exk_2_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_2*1000 - Exo_model_sens1$simulation$exk_2*1000
+exk_3_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_3*1000 - Exo_model_sens1$simulation$exk_3*1000
+exk_4_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_4*1000 - Exo_model_sens1$simulation$exk_4*1000
+exk_5_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_5*1000 - Exo_model_sens1$simulation$exk_5*1000
+exk_6_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_6*1000 - Exo_model_sens1$simulation$exk_6*1000
+exk_7_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_7*1000 - Exo_model_sens1$simulation$exk_7*1000
+exk_8_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_8*1000 - Exo_model_sens1$simulation$exk_8*1000
+exk_9_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$exk_9*1000 - Exo_model_sens1$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S4_sens1= exk_1_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S4_sens1= exk_2_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S4_sens1= exk_3_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S4_sens1= exk_4_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S4_sens1= exk_5_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S4_sens1= exk_6_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S4_sens1= exk_7_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S4_sens1= exk_8_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S4_sens1= exk_9_tot_S4_Delta_sens1*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S4_sens1=Delta_GHG_ex_row_1_S4_sens1 + Delta_GHG_ex_row_2_S4_sens1 + Delta_GHG_ex_row_3_S4_sens1 + Delta_GHG_ex_row_4_S4_sens1 + Delta_GHG_ex_row_5_S4_sens1 + Delta_GHG_ex_row_6_S4_sens1 + Delta_GHG_ex_row_7_S4_sens1 + Delta_GHG_ex_row_8_S4_sens1 + Delta_GHG_ex_row_9_S4_sens1
+
+# Carbon leakage through imports
+
+imk_1_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_1*1000 - Exo_model_sens1$simulation$Xk_im_1*1000
+imk_2_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_2*1000 - Exo_model_sens1$simulation$Xk_im_2*1000
+imk_3_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_3*1000 - Exo_model_sens1$simulation$Xk_im_3*1000
+imk_4_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_4*1000 - Exo_model_sens1$simulation$Xk_im_4*1000
+imk_5_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_5*1000 - Exo_model_sens1$simulation$Xk_im_5*1000
+imk_6_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_6*1000 - Exo_model_sens1$simulation$Xk_im_6*1000
+imk_7_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_7*1000 - Exo_model_sens1$simulation$Xk_im_7*1000
+imk_8_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_8*1000 - Exo_model_sens1$simulation$Xk_im_8*1000
+imk_9_tot_S4_Delta_sens1= Exo_model_S4_sens1$simulation$Xk_im_9*1000 - Exo_model_sens1$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S4_sens1= imk_1_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S4_sens1= imk_2_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S4_sens1= imk_3_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S4_sens1= imk_4_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S4_sens1= imk_5_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S4_sens1= imk_6_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S4_sens1= imk_7_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S4_sens1= imk_8_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S4_sens1= imk_9_tot_S4_Delta_sens1*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S4_sens1=Delta_GHG_im_row_1_S4_sens1 + Delta_GHG_im_row_2_S4_sens1 + Delta_GHG_im_row_3_S4_sens1 + Delta_GHG_im_row_4_S4_sens1 + Delta_GHG_im_row_5_S4_sens1 + Delta_GHG_im_row_6_S4_sens1 + Delta_GHG_im_row_7_S4_sens1  + Delta_GHG_im_row_8_S4_sens1 + Delta_GHG_im_row_9_S4_sens1
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S4_sens1 = Delta_GHG_ex_row_1_S4_sens1 + Delta_GHG_im_row_1_S4_sens1
+Delta_GHG_2_row_S4_sens1 = Delta_GHG_ex_row_2_S4_sens1 + Delta_GHG_im_row_2_S4_sens1
+Delta_GHG_3_row_S4_sens1 = Delta_GHG_ex_row_3_S4_sens1 + Delta_GHG_im_row_3_S4_sens1
+Delta_GHG_4_row_S4_sens1 = Delta_GHG_ex_row_4_S4_sens1 + Delta_GHG_im_row_4_S4_sens1
+Delta_GHG_5_row_S4_sens1 = Delta_GHG_ex_row_5_S4_sens1 + Delta_GHG_im_row_5_S4_sens1
+Delta_GHG_6_row_S4_sens1 = Delta_GHG_ex_row_6_S4_sens1 + Delta_GHG_im_row_6_S4_sens1
+Delta_GHG_7_row_S4_sens1 = Delta_GHG_ex_row_7_S4_sens1 + Delta_GHG_im_row_7_S4_sens1
+Delta_GHG_8_row_S4_sens1 = Delta_GHG_ex_row_8_S4_sens1 + Delta_GHG_im_row_8_S4_sens1
+Delta_GHG_9_row_S4_sens1 = Delta_GHG_ex_row_9_S4_sens1 + Delta_GHG_im_row_9_S4_sens1
+
+
+
+Delta_GHG_tot_row_S4_sens1 = Delta_GHG_tot_ex_S4_sens1 + Delta_GHG_tot_im_S4_sens1
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S4_sens1=cumsum(Delta_GHG_1_row_S4_sens1)
+Delta_GHG_2_cusum_row_S4_sens1=cumsum(Delta_GHG_2_row_S4_sens1)
+Delta_GHG_3_cusum_row_S4_sens1=cumsum(Delta_GHG_3_row_S4_sens1)
+Delta_GHG_4_cusum_row_S4_sens1=cumsum(Delta_GHG_4_row_S4_sens1)
+Delta_GHG_5_cusum_row_S4_sens1=cumsum(Delta_GHG_5_row_S4_sens1)
+Delta_GHG_6_cusum_row_S4_sens1=cumsum(Delta_GHG_6_row_S4_sens1)
+Delta_GHG_7_cusum_row_S4_sens1=cumsum(Delta_GHG_7_row_S4_sens1)
+Delta_GHG_8_cusum_row_S4_sens1=cumsum(Delta_GHG_8_row_S4_sens1)
+Delta_GHG_9_cusum_row_S4_sens1=cumsum(Delta_GHG_9_row_S4_sens1)
+
+Delta_GHG_tot_cusum_row_S4_sens1=cumsum(Delta_GHG_tot_row_S4_sens1)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_1/1000 - Exo_model_sens1$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_2/1000 - Exo_model_sens1$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_3/1000 - Exo_model_sens1$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_4/1000 - Exo_model_sens1$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_5/1000 - Exo_model_sens1$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_6/1000 - Exo_model_sens1$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_7/1000 - Exo_model_sens1$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_8/1000 - Exo_model_sens1$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_9/1000 - Exo_model_sens1$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S4_sens1= Exo_model_S4_sens1$simulation$Co2E_HH/1000 - Exo_model_sens1$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S4_sens1 =Exo_model_S4_sens1$simulation$Co2E_tot/1000 - Exo_model_sens1$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S4_sens1=cumsum(Delta_GHG_tot_DK_S4_sens1)
+```
+
+
+## Leakage rates
+
+
+```{r}
+
+
+Delta_GHG_tot_cusum_row_S1_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S2_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S4_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S3_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3_sens1), START = c(2019,1),FREQ=1)
+
+Delta_GHG_tot_cusum_DK_S1_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S1_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S2_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S2_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S4_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S4_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S3_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S3_sens1), START = c(2019,1),FREQ=1)
+
+Delta_GHG_tot_cusum_world_S1_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1_sens1+Delta_GHG_tot_cusum_DK_S1_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S2_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2_sens1+Delta_GHG_tot_cusum_DK_S2_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S4_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4_sens1+Delta_GHG_tot_cusum_DK_S4_sens1), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S3_sens1=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3_sens1+Delta_GHG_tot_cusum_DK_S3_sens1), START = c(2019,1),FREQ=1)
+
+Leak_rate_tot_S1_sens1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S1_sens1/Delta_GHG_tot_cusum_DK_S1_sens1), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S2_sens1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S2_sens1/Delta_GHG_tot_cusum_DK_S2_sens1), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S4_sens1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S4_sens1/Delta_GHG_tot_cusum_DK_S4_sens1), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S3_sens1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S3_sens1/Delta_GHG_tot_cusum_DK_S3_sens1), START = c(2019,1),FREQ=1)
+```
+
+
+## Shadow price:
+
+We start by claculating the dynamic change in output:
+
+```{r}
+
+Delta_GDP_tot_cusum_DK_S1_sens1=cumsum(Exo_model_S1_sens1$simulation$yk*1000000000 - Exo_model_sens1$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S2_sens1=cumsum(Exo_model_S2_sens1$simulation$yk*1000000000 - Exo_model_sens1$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S4_sens1=cumsum(Exo_model_S4_sens1$simulation$yk*1000000000 - Exo_model_sens1$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S3_sens1=cumsum(Exo_model_S3_sens1$simulation$yk*1000000000 - Exo_model_sens1$simulation$yk*1000000000)
+
+Delta_GDP_tot_cusum_DK_S1_sens1=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S1_sens1), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S2_sens1=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S2_sens1), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S4_sens1=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S4_sens1), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S3_sens1=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S3_sens1), START = c(2019,1),FREQ=1)
+
+Shadow_price_DK_S1_sens1= Delta_GDP_tot_cusum_DK_S1_sens1/Delta_GHG_tot_cusum_DK_S1_sens1
+Shadow_price_DK_S2_sens1= Delta_GDP_tot_cusum_DK_S2_sens1/Delta_GHG_tot_cusum_DK_S2_sens1
+Shadow_price_DK_S4_sens1= Delta_GDP_tot_cusum_DK_S4_sens1/Delta_GHG_tot_cusum_DK_S4_sens1
+Shadow_price_DK_S3_sens1= Delta_GDP_tot_cusum_DK_S3_sens1/Delta_GHG_tot_cusum_DK_S3_sens1
+
+Shadow_price_World_S1_sens1= Delta_GDP_tot_cusum_DK_S1_sens1/Delta_GHG_tot_cusum_world_S1_sens1
+Shadow_price_World_S2_sens1= Delta_GDP_tot_cusum_DK_S2_sens1/Delta_GHG_tot_cusum_world_S2_sens1
+Shadow_price_World_S4_sens1= Delta_GDP_tot_cusum_DK_S4_sens1/Delta_GHG_tot_cusum_world_S4_sens1
+Shadow_price_World_S3_sens1= Delta_GDP_tot_cusum_DK_S3_sens1/Delta_GHG_tot_cusum_world_S3_sens1
+
+```
+
+
+
+
+```{r, fig.height=7, fig.width=15}
+par(mfrow=c(1,2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
+# Apply the theme
+theme_journal()
+
+plot(window(Shadow_price_World_S1_sens1, start= c(2026,1)), col= "red", ylab= "Price in DKK for 1 ton CO2E reduction" , main= "Environmental sacrifice ratio", lwd=3, xlab="" ,ylim=c(0,29000), xlim=c(2026,2035) , cex.main=1.5);
+lines(window(Shadow_price_World_S2_sens1, start= c(2026,1)), col = "blue", lwd=3, xlab="");
+lines(window(Shadow_price_World_S3_sens1, start= c(2026,1)), col = "orange", lwd=3, xlab="");
+lines(window(Shadow_price_World_S4_sens1, start= c(2026,1)), col = "green", lwd=3, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+
+plot(window(Delta_GHG_tot_cusum_world_S1_sens1/1000000, start= c(2026,1)), col= "red", ylab= "Mil. ton CO2E" , main= "Cumulative change in CO2E", lwd=3, xlab="" ,ylim= c(-7,0), xlim=c(2026,2035) , cex.main=1.5);
+lines(window(Delta_GHG_tot_cusum_world_S2_sens1/1000000, start= c(2026,1)), col = "blue", lwd=3, xlab="");
+lines(window(Delta_GHG_tot_cusum_world_S3_sens1/1000000, start= c(2026,1)), col = "orange", lwd=3, xlab="");
+lines(window(Delta_GHG_tot_cusum_world_S4_sens1/1000000, start= c(2026,1)), col = "green", lwd=3, xlab="");
+legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+
+# Adding a collective title for both plots
+mtext("Environmental sacrifice ratio & Cumulative emissions (including carbon leakage)", side = 3, outer = TRUE, line = 1, cex = 1.7)
+
+```
+
+
+
+
+
+
