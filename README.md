@@ -6,4 +6,4 @@ Model Data: This folder contains the cleaned dataset necessary to run the model.
 Model Code: A text file with all the model equations, written using the BIMETS syntax.
 Model Simulations: An R Markdown file (.Rmd) that runs the baseline model and executes the three shocks as introduced in the working paper.
 
-For any questions, comments, or suggestions, please feel free to contact me at: sft@business.aau.dk.
+For any questions, please feel free to contact me at: sft@business.aau.dk.
