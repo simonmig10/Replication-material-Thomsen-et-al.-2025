@@ -19,7 +19,7 @@ IDENTITY> c_110_im_envT
 EQ> c_110_im_envT = -0.045*(c_110_im_tot)
 If> Scenario_4 > 0 & Scenario_3 <= 0 
 IDENTITY> c_110_im_envT
-EQ> c_110_im_envT = 0.0215*(c_110_im_tot)
+EQ> c_110_im_envT = 0.0165*(c_110_im_tot)
 If> Scenario_4 <= 0 & Scenario_3 > 0
 
 COMMENT> Consumption tax on domestically produces products
@@ -55,7 +55,7 @@ IDENTITY> c_120_im_envT
 EQ> c_120_im_envT = 750*0.0001*(c_120_im_tot)
 If> Scenario_1 > 0 & Scenario_3 <= 0 
 IDENTITY> c_120_im_envT
-EQ> c_120_im_envT = 0.0215*(c_120_im_tot)
+EQ> c_120_im_envT = 0.0165*(c_120_im_tot)
 If> Scenario_1 <= 0 & Scenario_3 > 0
 
 COMMENT> 
@@ -85,7 +85,7 @@ IDENTITY> c_130_im_envT
 EQ> c_130_im_envT = -0.045*(c_130_im_tot)
 If> Scenario_4 > 0 & Scenario_3 <= 0
 IDENTITY> c_130_im_envT
-EQ> c_130_im_envT = 0.0215*(c_130_im_tot)
+EQ> c_130_im_envT = 0.0165*(c_130_im_tot)
 If> Scenario_4 <= 0 & Scenario_3 > 0
 
 
@@ -122,7 +122,7 @@ IDENTITY> c_140_im_envT
 EQ> c_140_im_envT = 750*0.00015*(c_140_im_tot)
 If> Scenario_1 > 0 & Scenario_3 <= 0
 IDENTITY> c_140_im_envT
-EQ> c_140_im_envT = 0.0215*(c_140_im_tot)
+EQ> c_140_im_envT = 0.0165*(c_140_im_tot)
 If> Scenario_1 <= 0 & Scenario_3 > 0
 
 
@@ -153,7 +153,7 @@ IDENTITY> c_160_im_envT
 EQ> c_160_im_envT = -0.045*(c_160_im_tot)
 If> Scenario_4 > 0 & Scenario_3 <= 0
 IDENTITY> c_160_im_envT
-EQ> c_160_im_envT = 0.0215*(c_160_im_tot)
+EQ> c_160_im_envT = 0.0165*(c_160_im_tot)
 If> Scenario_4 <= 0 & Scenario_3 > 0
 
 
@@ -183,7 +183,7 @@ IDENTITY> c_180_im_envT
 EQ> c_180_im_envT = -0.045*(c_180_im_tot)
 If> Scenario_4 > 0 & Scenario_3 <= 0
 IDENTITY> c_180_im_envT
-EQ> c_180_im_envT = 0.0215*(c_180_im_tot)
+EQ> c_180_im_envT = 0.0165*(c_180_im_tot)
 If> Scenario_4 <= 0 & Scenario_3 > 0
 
 
