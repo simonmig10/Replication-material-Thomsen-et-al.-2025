@@ -2454,9 +2454,6 @@ dev.off()
 
 # Sensitivity analysis
 
-
-## Baseline
-
 ```{r}
 Sens_1_shock= S_modelData$Sens_1 %>% window(start= c(2000,1)) # Lowering Substitution elasticities in final consumption
 Sens_2_shock= S_modelData$Sens_2 %>% window(start= c(2000,1)) # Increasing Substitution elasticities in final consumption
@@ -2468,11 +2465,18 @@ Sens_4_shock= S_modelData$Sens_4 %>% window(start= c(2000,1)) # Increasing expor
 Depending on what sensitivity analysis you want to run, adjust the "Sens_4" and "Sens_4_shock" for the baseline and each scenario.
 
 
+## Lower bound
+
+### Baseline
+
+
+
+
 ```{r}
 # Define add-factor list (defining shock)
 constantAdjList_sens <- list(
   
-Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+Sens_1 = TIMESERIES(Sens_1_shock+1 ,START=c(2000,1),  FREQ=1)
 )
 
 
@@ -2537,7 +2541,7 @@ mtext("Real sales in the nine industries", side = 3, outer = TRUE, line = 1, cex
 
 
 
-## Scenario 1
+### Scenario 1
 
 
 
@@ -2553,7 +2557,7 @@ Scenario_1_shock= S_modelData$Scenario_1 %>% window(start= c(2025,1))
 constantAdjList_s1_sens1 <- list(
   
 Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
-Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+Sens_1 = TIMESERIES(Sens_1_shock+1 ,START=c(2000,1),  FREQ=1)
 )
 
 ```
@@ -2588,7 +2592,7 @@ Exo_model_S1_sens1$simulation$check_neq
 
 
 
-## Scenario 2
+### Scenario 2
 
 ```{r}
 
@@ -2602,7 +2606,7 @@ Scenario_2_shock= S_modelData$Scenario_2 %>% window(start= c(2025,1))
 constantAdjList_s2_sens1 <- list(
 
 Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
-Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+Sens_1 = TIMESERIES(Sens_1_shock+1 ,START=c(2000,1),  FREQ=1)
 )
 
 ```
@@ -2641,7 +2645,7 @@ Exo_model_S2_sens1$simulation$check_tax
 
 
 
-## Scenario 3
+### Scenario 3
 
 ```{r}
 
@@ -2656,7 +2660,7 @@ constantAdjList_s3_sens1 <- list(
 
 Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
 Scenario_3 = TIMESERIES(Scenario_3_shock+1 ,START=c(2025,1),  FREQ=1),
-Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+Sens_1 = TIMESERIES(Sens_1_shock+1 ,START=c(2000,1),  FREQ=1)
 )
 
 ```
@@ -2695,7 +2699,7 @@ Exo_model_S3_sens1$simulation$check_tax
 
 
 
-## Scenario 4
+### Scenario 4
 
 ```{r}
 
@@ -2710,7 +2714,7 @@ constantAdjList_s4_sens1 <- list(
   
 Scenario_4 = TIMESERIES(Scenario_4_shock+1 ,START=c(2025,1),  FREQ=1),
 Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
-Sens_4 = TIMESERIES(Sens_4_shock+1 ,START=c(2000,1),  FREQ=1)
+Sens_1 = TIMESERIES(Sens_1_shock+1 ,START=c(2000,1),  FREQ=1)
 )
 
 ```
@@ -2742,13 +2746,13 @@ Exo_model_S4_sens1$simulation$check_tax
 
 
 
-## Discussion & Carbon leakage
+### Discussion & Carbon leakage
 
 
 We should calculate the change in exports and imports
 
 
-### S1
+#### S1
 
 We multiply by 1000 as the coefficients are based on millions DKK
 
@@ -2868,7 +2872,7 @@ Delta_GHG_tot_cusum_DK_S1_sens1=cumsum(Delta_GHG_tot_DK_S1_sens1)
 
 
 
-### S2
+#### S2
 
 We multiply by 1000 as the coefficients are based on millions DKK
 
@@ -2989,7 +2993,7 @@ Delta_GHG_tot_cusum_DK_S2_sens1=cumsum(Delta_GHG_tot_DK_S2_sens1)
 
 
 
-### S5
+#### S3
 
 We multiply by 1000 as the coefficients are based on millions DKK
 ```{r}
@@ -3110,7 +3114,7 @@ Delta_GHG_tot_cusum_DK_S3_sens1=cumsum(Delta_GHG_tot_DK_S3_sens1)
 
 
 
-### S4
+#### S4
 
 We multiply by 1000 as the coefficients are based on millions DKK
 ```{r}
@@ -3228,7 +3232,7 @@ Delta_GHG_tot_cusum_DK_S4_sens1=cumsum(Delta_GHG_tot_DK_S4_sens1)
 ```
 
 
-## Leakage rates
+### Leakage rates
 
 
 ```{r}
@@ -3256,7 +3260,7 @@ Leak_rate_tot_S3_sens1=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S3_sens1/Delta_GHG_
 ```
 
 
-## Shadow price:
+### Shadow price:
 
 We start by claculating the dynamic change in output:
 
@@ -3287,27 +3291,922 @@ Shadow_price_World_S3_sens1= Delta_GDP_tot_cusum_DK_S3_sens1/Delta_GHG_tot_cusum
 
 
 
-```{r, fig.height=7, fig.width=15}
-par(mfrow=c(1,2), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+## Upper bound
 
-# Apply the theme
+### Baseline
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_sens_upper <- list(
+  
+Sens_2 = TIMESERIES(Sens_2_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_sens_upper <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,verbose = F
+                    ,ConstantAdjustment=constantAdjList_sens_upper
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r, fig.width=20, fig.height=15}
+
+par(mfrow = c(3, 3), oma = c(0, 0, 3, 0))  # oma sets the outer margins
+
 theme_journal()
 
-plot(window(Shadow_price_World_S1_sens1, start= c(2026,1)), col= "red", ylab= "Price in DKK for 1 ton CO2E reduction" , main= "Environmental sacrifice ratio", lwd=3, xlab="" ,ylim=c(0,29000), xlim=c(2026,2035) , cex.main=1.5);
-lines(window(Shadow_price_World_S2_sens1, start= c(2026,1)), col = "blue", lwd=3, xlab="");
-lines(window(Shadow_price_World_S3_sens1, start= c(2026,1)), col = "orange", lwd=3, xlab="");
-lines(window(Shadow_price_World_S4_sens1, start= c(2026,1)), col = "green", lwd=3, xlab="");
-legend("bottomleft",legend=c("Scenario 1: Consumption tax", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+plot(Exo_model_sens_upper$simulation$Xk_dom_1, col= "red", ylab= "B. DKR" , main= "Agriculture/Forresty/Fishery", lwd=3, xlab="" , ylim= c(66,90) , cex.main=2); lines(S_modelData$Xk_dom_1, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
 
+plot(Exo_model_sens_upper$simulation$Xk_dom_2, col= "red", ylab= "B. DKR" , main= "Mining", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_2, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("bottomleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
 
-plot(window(Delta_GHG_tot_cusum_world_S1_sens1/1000000, start= c(2026,1)), col= "red", ylab= "Mil. ton CO2E" , main= "Cumulative change in CO2E", lwd=3, xlab="" ,ylim= c(-7,0), xlim=c(2026,2035) , cex.main=1.5);
-lines(window(Delta_GHG_tot_cusum_world_S2_sens1/1000000, start= c(2026,1)), col = "blue", lwd=3, xlab="");
-lines(window(Delta_GHG_tot_cusum_world_S3_sens1/1000000, start= c(2026,1)), col = "orange", lwd=3, xlab="");
-lines(window(Delta_GHG_tot_cusum_world_S4_sens1/1000000, start= c(2026,1)), col = "green", lwd=3, xlab="");
-legend("bottomleft",legend=c("Scenario 1: Consumption taX", "Scenario 2: Production tax", "Scenario 2b: Carbon tax - Carbon Adjustment Mechanisme", "Scenario 1b: Consumption tax/Subsidy"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue", "orange" ,"green"), cex=1); grid()
+plot(Exo_model_sens_upper$simulation$Xk_dom_3, col= "red", ylab= "B. DKR" , main= "Production of meat and fish", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_3, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_4, col= "red", ylab= "B. DKR" , main= "Production of Dairy", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_4, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_5, col= "red", ylab= "B. DKR" , main= "Production of bread", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_5, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_6, col= "red", ylab= "B. DKR" , main= "Production of other food", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_6, col = "blue", lwd=3, xlab=""); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_7, col= "red", ylab= "B. DKR" , main= "Energy intensive industries", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_7, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_8, col= "red", ylab= "B. DKR" , main= "Energy production", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_8, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("bottomleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
+
+plot(Exo_model_sens_upper$simulation$Xk_dom_9, col= "red", ylab= "B. DKR" , main= "Other industries", lwd=3, xlab="" , cex.main=2); lines(S_modelData$Xk_dom_9, col = "blue", lwd=3, xlab="",cex = 1.5); 
+legend("topleft",legend=c("Model (baseline)", "Data"),lty=c(1,1),lwd=c(2),bty="n", col = c("red", "blue"), cex=2); grid()
 
 # Adding a collective title for both plots
-mtext("Environmental sacrifice ratio & Cumulative emissions (including carbon leakage)", side = 3, outer = TRUE, line = 1, cex = 1.7)
+mtext("Real sales in the nine industries", side = 3, outer = TRUE, line = 1, cex = 1.5)
+
+```
+
+
+
+
+### Scenario 1
+
+
+
+```{r}
+
+Scenario_1_shock= S_modelData$Scenario_1 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s1_sens_upper <- list(
+  
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_2 = TIMESERIES(Sens_2_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S1_sens_upper <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s1_sens_upper
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S1_sens_upper$simulation$check_nl 
+Exo_model_S1_sens_upper$simulation$check_sec
+Exo_model_S1_sens_upper$simulation$check_np
+Exo_model_S1_sens_upper$simulation$check_neq
+Exo_model_S1_sens_upper$simulation$check_ctr
+Exo_model_S1_sens_upper$simulation$check_invest
+Exo_model_S1_sens_upper$simulation$check_tax
+Exo_model_S1_sens_upper$simulation$check_neq
+
+
+```
+
+
+
+
+### Scenario 2
+
+```{r}
+
+Scenario_2_shock= S_modelData$Scenario_2 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s2_sens_upper <- list(
+
+Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_2 = TIMESERIES(Sens_2_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S2_sens_upper <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s2_sens_upper
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S2_sens_upper$simulation$check_nl 
+Exo_model_S2_sens_upper$simulation$check_sec
+Exo_model_S2_sens_upper$simulation$check_np
+Exo_model_S2_sens_upper$simulation$check_ctr
+Exo_model_S2_sens_upper$simulation$check_invest
+Exo_model_S2_sens_upper$simulation$check_tax
+
+
+
+```
+
+
+
+
+
+
+### Scenario 3
+
+```{r}
+
+Scenario_3_shock= S_modelData$Scenario_3 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s3_sens_upper <- list(
+
+Scenario_2 = TIMESERIES(Scenario_2_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_3 = TIMESERIES(Scenario_3_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_2 = TIMESERIES(Sens_2_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S3_sens_upper <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s3_sens_upper
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+
+
+
+```{r}
+Exo_model_S3_sens_upper$simulation$check_nl 
+Exo_model_S3_sens_upper$simulation$check_sec
+Exo_model_S3_sens_upper$simulation$check_np
+Exo_model_S3_sens_upper$simulation$check_ctr
+Exo_model_S3_sens_upper$simulation$check_invest
+Exo_model_S3_sens_upper$simulation$check_tax
+
+
+
+```
+
+
+
+
+
+
+### Scenario 4
+
+```{r}
+
+Scenario_4_shock= S_modelData$Scenario_4 %>% window(start= c(2025,1))
+```
+
+
+
+```{r}
+# Define add-factor list (defining shock)
+constantAdjList_s4_sens_upper <- list(
+  
+Scenario_4 = TIMESERIES(Scenario_4_shock+1 ,START=c(2025,1),  FREQ=1),
+Scenario_1 = TIMESERIES(Scenario_1_shock+1 ,START=c(2025,1),  FREQ=1),
+Sens_2 = TIMESERIES(Sens_2_shock+1 ,START=c(2000,1),  FREQ=1)
+)
+
+```
+
+
+
+```{r, results='hide'}
+# Simulate the model (following shock)
+Exo_model_S4_sens_upper <- SIMULATE(S_model
+                    ,simType='FORECAST'
+                    ,TSRANGE=c(2019,1,2035,1)
+                    ,simConvergence=0.0001
+                    ,simIterLimit=100
+                    ,ConstantAdjustment=constantAdjList_s4_sens_upper
+                    ,Exogenize = exogenizeList
+                    )
+```
+
+
+```{r}
+Exo_model_S4_sens_upper$simulation$check_nl 
+Exo_model_S4_sens_upper$simulation$check_sec
+Exo_model_S4_sens_upper$simulation$check_np
+Exo_model_S4_sens_upper$simulation$check_ctr
+Exo_model_S4_sens_upper$simulation$check_invest
+Exo_model_S4_sens_upper$simulation$check_tax
+
+```
+
+
+
+### Discussion & Carbon leakage
+
+
+We should calculate the change in exports and imports
+
+
+#### S1
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_1*1000 - Exo_model_sens_upper$simulation$exk_1*1000 
+exk_2_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_2*1000 - Exo_model_sens_upper$simulation$exk_2*1000
+exk_3_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_3*1000 - Exo_model_sens_upper$simulation$exk_3*1000
+exk_4_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_4*1000 - Exo_model_sens_upper$simulation$exk_4*1000
+exk_5_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_5*1000 - Exo_model_sens_upper$simulation$exk_5*1000
+exk_6_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_6*1000 - Exo_model_sens_upper$simulation$exk_6*1000
+exk_7_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_7*1000 - Exo_model_sens_upper$simulation$exk_7*1000
+exk_8_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_8*1000 - Exo_model_sens_upper$simulation$exk_8*1000
+exk_9_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$exk_9*1000 - Exo_model_sens_upper$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S1_sens_upper= exk_1_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S1_sens_upper= exk_2_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S1_sens_upper= exk_3_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S1_sens_upper= exk_4_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S1_sens_upper= exk_5_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S1_sens_upper= exk_6_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S1_sens_upper= exk_7_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S1_sens_upper= exk_8_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S1_sens_upper= exk_9_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S1_sens_upper=Delta_GHG_ex_row_1_S1_sens_upper + Delta_GHG_ex_row_2_S1_sens_upper + Delta_GHG_ex_row_3_S1_sens_upper + Delta_GHG_ex_row_4_S1_sens_upper + Delta_GHG_ex_row_5_S1_sens_upper + Delta_GHG_ex_row_6_S1_sens_upper + Delta_GHG_ex_row_7_S1_sens_upper + Delta_GHG_ex_row_8_S1_sens_upper + Delta_GHG_ex_row_9_S1_sens_upper
+
+# Carbon leakage through imports
+
+imk_1_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_1*1000 - Exo_model_sens_upper$simulation$Xk_im_1*1000
+imk_2_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_2*1000 - Exo_model_sens_upper$simulation$Xk_im_2*1000
+imk_3_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_3*1000 - Exo_model_sens_upper$simulation$Xk_im_3*1000
+imk_4_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_4*1000 - Exo_model_sens_upper$simulation$Xk_im_4*1000
+imk_5_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_5*1000 - Exo_model_sens_upper$simulation$Xk_im_5*1000
+imk_6_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_6*1000 - Exo_model_sens_upper$simulation$Xk_im_6*1000
+imk_7_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_7*1000 - Exo_model_sens_upper$simulation$Xk_im_7*1000
+imk_8_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_8*1000 - Exo_model_sens_upper$simulation$Xk_im_8*1000
+imk_9_tot_S1_Delta_sens_upper= Exo_model_S1_sens_upper$simulation$Xk_im_9*1000 - Exo_model_sens_upper$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S1_sens_upper= imk_1_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S1_sens_upper= imk_2_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S1_sens_upper= imk_3_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S1_sens_upper= imk_4_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S1_sens_upper= imk_5_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S1_sens_upper= imk_6_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S1_sens_upper= imk_7_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S1_sens_upper= imk_8_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S1_sens_upper= imk_9_tot_S1_Delta_sens_upper*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S1_sens_upper=Delta_GHG_im_row_1_S1_sens_upper + Delta_GHG_im_row_2_S1_sens_upper + Delta_GHG_im_row_3_S1_sens_upper + Delta_GHG_im_row_4_S1_sens_upper + Delta_GHG_im_row_5_S1_sens_upper + Delta_GHG_im_row_6_S1_sens_upper + Delta_GHG_im_row_7_S1_sens_upper  + Delta_GHG_im_row_8_S1_sens_upper + Delta_GHG_im_row_9_S1_sens_upper
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S1_sens_upper = Delta_GHG_ex_row_1_S1_sens_upper + Delta_GHG_im_row_1_S1_sens_upper
+Delta_GHG_2_row_S1_sens_upper = Delta_GHG_ex_row_2_S1_sens_upper + Delta_GHG_im_row_2_S1_sens_upper
+Delta_GHG_3_row_S1_sens_upper = Delta_GHG_ex_row_3_S1_sens_upper + Delta_GHG_im_row_3_S1_sens_upper
+Delta_GHG_4_row_S1_sens_upper = Delta_GHG_ex_row_4_S1_sens_upper + Delta_GHG_im_row_4_S1_sens_upper
+Delta_GHG_5_row_S1_sens_upper = Delta_GHG_ex_row_5_S1_sens_upper + Delta_GHG_im_row_5_S1_sens_upper
+Delta_GHG_6_row_S1_sens_upper = Delta_GHG_ex_row_6_S1_sens_upper + Delta_GHG_im_row_6_S1_sens_upper
+Delta_GHG_7_row_S1_sens_upper = Delta_GHG_ex_row_7_S1_sens_upper + Delta_GHG_im_row_7_S1_sens_upper
+Delta_GHG_8_row_S1_sens_upper = Delta_GHG_ex_row_8_S1_sens_upper + Delta_GHG_im_row_8_S1_sens_upper
+Delta_GHG_9_row_S1_sens_upper = Delta_GHG_ex_row_9_S1_sens_upper + Delta_GHG_im_row_9_S1_sens_upper
+
+
+
+Delta_GHG_tot_row_S1_sens_upper = Delta_GHG_tot_ex_S1_sens_upper + Delta_GHG_tot_im_S1_sens_upper
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S1_sens_upper=cumsum(Delta_GHG_1_row_S1_sens_upper)
+Delta_GHG_2_cusum_row_S1_sens_upper=cumsum(Delta_GHG_2_row_S1_sens_upper)
+Delta_GHG_3_cusum_row_S1_sens_upper=cumsum(Delta_GHG_3_row_S1_sens_upper)
+Delta_GHG_4_cusum_row_S1_sens_upper=cumsum(Delta_GHG_4_row_S1_sens_upper)
+Delta_GHG_5_cusum_row_S1_sens_upper=cumsum(Delta_GHG_5_row_S1_sens_upper)
+Delta_GHG_6_cusum_row_S1_sens_upper=cumsum(Delta_GHG_6_row_S1_sens_upper)
+Delta_GHG_7_cusum_row_S1_sens_upper=cumsum(Delta_GHG_7_row_S1_sens_upper)
+Delta_GHG_8_cusum_row_S1_sens_upper=cumsum(Delta_GHG_8_row_S1_sens_upper)
+Delta_GHG_9_cusum_row_S1_sens_upper=cumsum(Delta_GHG_9_row_S1_sens_upper)
+
+Delta_GHG_tot_cusum_row_S1_sens_upper=cumsum(Delta_GHG_tot_row_S1_sens_upper)
+```
+
+We calculate the change in emission for Denmark.
+
+```{r}
+
+Delta_GHG_1_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_1/1000 - Exo_model_sens_upper$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_2/1000 - Exo_model_sens_upper$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_3/1000 - Exo_model_sens_upper$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_4/1000 - Exo_model_sens_upper$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_5/1000 - Exo_model_sens_upper$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_6/1000 - Exo_model_sens_upper$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_7/1000 - Exo_model_sens_upper$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_8/1000 - Exo_model_sens_upper$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_9/1000 - Exo_model_sens_upper$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S1_sens_upper= Exo_model_S1_sens_upper$simulation$Co2E_HH/1000 - Exo_model_sens_upper$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S1_sens_upper =Exo_model_S1_sens_upper$simulation$Co2E_tot/1000 - Exo_model_sens_upper$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S1_sens_upper=cumsum(Delta_GHG_tot_DK_S1_sens_upper)
+```
+
+
+
+
+#### S2
+
+We multiply by 1000 as the coefficients are based on millions DKK
+
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_1*1000 - Exo_model_sens_upper$simulation$exk_1*1000 
+exk_2_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_2*1000 - Exo_model_sens_upper$simulation$exk_2*1000
+exk_3_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_3*1000 - Exo_model_sens_upper$simulation$exk_3*1000
+exk_4_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_4*1000 - Exo_model_sens_upper$simulation$exk_4*1000
+exk_5_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_5*1000 - Exo_model_sens_upper$simulation$exk_5*1000
+exk_6_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_6*1000 - Exo_model_sens_upper$simulation$exk_6*1000
+exk_7_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_7*1000 - Exo_model_sens_upper$simulation$exk_7*1000
+exk_8_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_8*1000 - Exo_model_sens_upper$simulation$exk_8*1000
+exk_9_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$exk_9*1000 - Exo_model_sens_upper$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S2_sens_upper= exk_1_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S2_sens_upper= exk_2_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S2_sens_upper= exk_3_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S2_sens_upper= exk_4_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S2_sens_upper= exk_5_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S2_sens_upper= exk_6_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S2_sens_upper= exk_7_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S2_sens_upper= exk_8_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S2_sens_upper= exk_9_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S2_sens_upper=Delta_GHG_ex_row_1_S2_sens_upper + Delta_GHG_ex_row_2_S2_sens_upper + Delta_GHG_ex_row_3_S2_sens_upper + Delta_GHG_ex_row_4_S2_sens_upper + Delta_GHG_ex_row_5_S2_sens_upper + Delta_GHG_ex_row_6_S2_sens_upper + Delta_GHG_ex_row_7_S2_sens_upper + Delta_GHG_ex_row_8_S2_sens_upper + Delta_GHG_ex_row_9_S2_sens_upper
+
+# Carbon leakage through imports
+
+imk_1_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_1*1000 - Exo_model_sens_upper$simulation$Xk_im_1*1000
+imk_2_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_2*1000 - Exo_model_sens_upper$simulation$Xk_im_2*1000
+imk_3_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_3*1000 - Exo_model_sens_upper$simulation$Xk_im_3*1000
+imk_4_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_4*1000 - Exo_model_sens_upper$simulation$Xk_im_4*1000
+imk_5_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_5*1000 - Exo_model_sens_upper$simulation$Xk_im_5*1000
+imk_6_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_6*1000 - Exo_model_sens_upper$simulation$Xk_im_6*1000
+imk_7_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_7*1000 - Exo_model_sens_upper$simulation$Xk_im_7*1000
+imk_8_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_8*1000 - Exo_model_sens_upper$simulation$Xk_im_8*1000
+imk_9_tot_S2_Delta_sens_upper= Exo_model_S2_sens_upper$simulation$Xk_im_9*1000 - Exo_model_sens_upper$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S2_sens_upper= imk_1_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S2_sens_upper= imk_2_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S2_sens_upper= imk_3_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S2_sens_upper= imk_4_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S2_sens_upper= imk_5_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S2_sens_upper= imk_6_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S2_sens_upper= imk_7_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S2_sens_upper= imk_8_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S2_sens_upper= imk_9_tot_S2_Delta_sens_upper*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S2_sens_upper=Delta_GHG_im_row_1_S2_sens_upper + Delta_GHG_im_row_2_S2_sens_upper + Delta_GHG_im_row_3_S2_sens_upper + Delta_GHG_im_row_4_S2_sens_upper + Delta_GHG_im_row_5_S2_sens_upper + Delta_GHG_im_row_6_S2_sens_upper + Delta_GHG_im_row_7_S2_sens_upper  + Delta_GHG_im_row_8_S2_sens_upper + Delta_GHG_im_row_9_S2_sens_upper
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S2_sens_upper = Delta_GHG_ex_row_1_S2_sens_upper + Delta_GHG_im_row_1_S2_sens_upper
+Delta_GHG_2_row_S2_sens_upper = Delta_GHG_ex_row_2_S2_sens_upper + Delta_GHG_im_row_2_S2_sens_upper
+Delta_GHG_3_row_S2_sens_upper = Delta_GHG_ex_row_3_S2_sens_upper + Delta_GHG_im_row_3_S2_sens_upper
+Delta_GHG_4_row_S2_sens_upper = Delta_GHG_ex_row_4_S2_sens_upper + Delta_GHG_im_row_4_S2_sens_upper
+Delta_GHG_5_row_S2_sens_upper = Delta_GHG_ex_row_5_S2_sens_upper + Delta_GHG_im_row_5_S2_sens_upper
+Delta_GHG_6_row_S2_sens_upper = Delta_GHG_ex_row_6_S2_sens_upper + Delta_GHG_im_row_6_S2_sens_upper
+Delta_GHG_7_row_S2_sens_upper = Delta_GHG_ex_row_7_S2_sens_upper + Delta_GHG_im_row_7_S2_sens_upper
+Delta_GHG_8_row_S2_sens_upper = Delta_GHG_ex_row_8_S2_sens_upper + Delta_GHG_im_row_8_S2_sens_upper
+Delta_GHG_9_row_S2_sens_upper = Delta_GHG_ex_row_9_S2_sens_upper + Delta_GHG_im_row_9_S2_sens_upper
+
+
+
+Delta_GHG_tot_row_S2_sens_upper = Delta_GHG_tot_ex_S2_sens_upper + Delta_GHG_tot_im_S2_sens_upper
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S2_sens_upper=cumsum(Delta_GHG_1_row_S2_sens_upper)
+Delta_GHG_2_cusum_row_S2_sens_upper=cumsum(Delta_GHG_2_row_S2_sens_upper)
+Delta_GHG_3_cusum_row_S2_sens_upper=cumsum(Delta_GHG_3_row_S2_sens_upper)
+Delta_GHG_4_cusum_row_S2_sens_upper=cumsum(Delta_GHG_4_row_S2_sens_upper)
+Delta_GHG_5_cusum_row_S2_sens_upper=cumsum(Delta_GHG_5_row_S2_sens_upper)
+Delta_GHG_6_cusum_row_S2_sens_upper=cumsum(Delta_GHG_6_row_S2_sens_upper)
+Delta_GHG_7_cusum_row_S2_sens_upper=cumsum(Delta_GHG_7_row_S2_sens_upper)
+Delta_GHG_8_cusum_row_S2_sens_upper=cumsum(Delta_GHG_8_row_S2_sens_upper)
+Delta_GHG_9_cusum_row_S2_sens_upper=cumsum(Delta_GHG_9_row_S2_sens_upper)
+
+Delta_GHG_tot_cusum_row_S2_sens_upper=cumsum(Delta_GHG_tot_row_S2_sens_upper)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_1/1000 - Exo_model_sens_upper$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_2/1000 - Exo_model_sens_upper$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_3/1000 - Exo_model_sens_upper$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_4/1000 - Exo_model_sens_upper$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_5/1000 - Exo_model_sens_upper$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_6/1000 - Exo_model_sens_upper$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_7/1000 - Exo_model_sens_upper$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_8/1000 - Exo_model_sens_upper$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_9/1000 - Exo_model_sens_upper$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S2_sens_upper= Exo_model_S2_sens_upper$simulation$Co2E_HH/1000 - Exo_model_sens_upper$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S2_sens_upper =Exo_model_S2_sens_upper$simulation$Co2E_tot/1000 - Exo_model_sens_upper$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S2_sens_upper=cumsum(Delta_GHG_tot_DK_S2_sens_upper)
+```
+
+
+
+
+#### S3
+
+We multiply by 1000 as the coefficients are based on millions DKK
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_1*1000 - Exo_model_sens_upper$simulation$exk_1*1000 
+exk_2_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_2*1000 - Exo_model_sens_upper$simulation$exk_2*1000
+exk_3_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_3*1000 - Exo_model_sens_upper$simulation$exk_3*1000
+exk_4_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_4*1000 - Exo_model_sens_upper$simulation$exk_4*1000
+exk_5_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_5*1000 - Exo_model_sens_upper$simulation$exk_5*1000
+exk_6_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_6*1000 - Exo_model_sens_upper$simulation$exk_6*1000
+exk_7_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_7*1000 - Exo_model_sens_upper$simulation$exk_7*1000
+exk_8_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_8*1000 - Exo_model_sens_upper$simulation$exk_8*1000
+exk_9_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$exk_9*1000 - Exo_model_sens_upper$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S3_sens_upper= exk_1_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S3_sens_upper= exk_2_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S3_sens_upper= exk_3_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S3_sens_upper= exk_4_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S3_sens_upper= exk_5_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S3_sens_upper= exk_6_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S3_sens_upper= exk_7_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S3_sens_upper= exk_8_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S3_sens_upper= exk_9_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S3_sens_upper=Delta_GHG_ex_row_1_S3_sens_upper + Delta_GHG_ex_row_2_S3_sens_upper + Delta_GHG_ex_row_3_S3_sens_upper + Delta_GHG_ex_row_4_S3_sens_upper + Delta_GHG_ex_row_5_S3_sens_upper + Delta_GHG_ex_row_6_S3_sens_upper + Delta_GHG_ex_row_7_S3_sens_upper + Delta_GHG_ex_row_8_S3_sens_upper + Delta_GHG_ex_row_9_S3_sens_upper
+
+# Carbon leakage through imports
+
+imk_1_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_1*1000 - Exo_model_sens_upper$simulation$Xk_im_1*1000
+imk_2_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_2*1000 - Exo_model_sens_upper$simulation$Xk_im_2*1000
+imk_3_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_3*1000 - Exo_model_sens_upper$simulation$Xk_im_3*1000
+imk_4_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_4*1000 - Exo_model_sens_upper$simulation$Xk_im_4*1000
+imk_5_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_5*1000 - Exo_model_sens_upper$simulation$Xk_im_5*1000
+imk_6_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_6*1000 - Exo_model_sens_upper$simulation$Xk_im_6*1000
+imk_7_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_7*1000 - Exo_model_sens_upper$simulation$Xk_im_7*1000
+imk_8_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_8*1000 - Exo_model_sens_upper$simulation$Xk_im_8*1000
+imk_9_tot_S3_Delta_sens_upper= Exo_model_S3_sens_upper$simulation$Xk_im_9*1000 - Exo_model_sens_upper$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S3_sens_upper= imk_1_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S3_sens_upper= imk_2_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S3_sens_upper= imk_3_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S3_sens_upper= imk_4_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S3_sens_upper= imk_5_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S3_sens_upper= imk_6_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S3_sens_upper= imk_7_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S3_sens_upper= imk_8_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S3_sens_upper= imk_9_tot_S3_Delta_sens_upper*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S3_sens_upper=Delta_GHG_im_row_1_S3_sens_upper + Delta_GHG_im_row_2_S3_sens_upper + Delta_GHG_im_row_3_S3_sens_upper + Delta_GHG_im_row_4_S3_sens_upper + Delta_GHG_im_row_5_S3_sens_upper + Delta_GHG_im_row_6_S3_sens_upper + Delta_GHG_im_row_7_S3_sens_upper  + Delta_GHG_im_row_8_S3_sens_upper + Delta_GHG_im_row_9_S3_sens_upper
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S3_sens_upper = Delta_GHG_ex_row_1_S3_sens_upper + Delta_GHG_im_row_1_S3_sens_upper
+Delta_GHG_2_row_S3_sens_upper = Delta_GHG_ex_row_2_S3_sens_upper + Delta_GHG_im_row_2_S3_sens_upper
+Delta_GHG_3_row_S3_sens_upper = Delta_GHG_ex_row_3_S3_sens_upper + Delta_GHG_im_row_3_S3_sens_upper
+Delta_GHG_4_row_S3_sens_upper = Delta_GHG_ex_row_4_S3_sens_upper + Delta_GHG_im_row_4_S3_sens_upper
+Delta_GHG_5_row_S3_sens_upper = Delta_GHG_ex_row_5_S3_sens_upper + Delta_GHG_im_row_5_S3_sens_upper
+Delta_GHG_6_row_S3_sens_upper = Delta_GHG_ex_row_6_S3_sens_upper + Delta_GHG_im_row_6_S3_sens_upper
+Delta_GHG_7_row_S3_sens_upper = Delta_GHG_ex_row_7_S3_sens_upper + Delta_GHG_im_row_7_S3_sens_upper
+Delta_GHG_8_row_S3_sens_upper = Delta_GHG_ex_row_8_S3_sens_upper + Delta_GHG_im_row_8_S3_sens_upper
+Delta_GHG_9_row_S3_sens_upper = Delta_GHG_ex_row_9_S3_sens_upper + Delta_GHG_im_row_9_S3_sens_upper
+
+
+
+Delta_GHG_tot_row_S3_sens_upper = Delta_GHG_tot_ex_S3_sens_upper + Delta_GHG_tot_im_S3_sens_upper
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S3_sens_upper=cumsum(Delta_GHG_1_row_S3_sens_upper)
+Delta_GHG_2_cusum_row_S3_sens_upper=cumsum(Delta_GHG_2_row_S3_sens_upper)
+Delta_GHG_3_cusum_row_S3_sens_upper=cumsum(Delta_GHG_3_row_S3_sens_upper)
+Delta_GHG_4_cusum_row_S3_sens_upper=cumsum(Delta_GHG_4_row_S3_sens_upper)
+Delta_GHG_5_cusum_row_S3_sens_upper=cumsum(Delta_GHG_5_row_S3_sens_upper)
+Delta_GHG_6_cusum_row_S3_sens_upper=cumsum(Delta_GHG_6_row_S3_sens_upper)
+Delta_GHG_7_cusum_row_S3_sens_upper=cumsum(Delta_GHG_7_row_S3_sens_upper)
+Delta_GHG_8_cusum_row_S3_sens_upper=cumsum(Delta_GHG_8_row_S3_sens_upper)
+Delta_GHG_9_cusum_row_S3_sens_upper=cumsum(Delta_GHG_9_row_S3_sens_upper)
+
+Delta_GHG_tot_cusum_row_S3_sens_upper=cumsum(Delta_GHG_tot_row_S3_sens_upper)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_1/1000 - Exo_model_sens_upper$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_2/1000 - Exo_model_sens_upper$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_3/1000 - Exo_model_sens_upper$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_4/1000 - Exo_model_sens_upper$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_5/1000 - Exo_model_sens_upper$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_6/1000 - Exo_model_sens_upper$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_7/1000 - Exo_model_sens_upper$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_8/1000 - Exo_model_sens_upper$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_9/1000 - Exo_model_sens_upper$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S3_sens_upper= Exo_model_S3_sens_upper$simulation$Co2E_HH/1000 - Exo_model_sens_upper$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S3_sens_upper =Exo_model_S3_sens_upper$simulation$Co2E_tot/1000 - Exo_model_sens_upper$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S3_sens_upper=cumsum(Delta_GHG_tot_DK_S3_sens_upper)
+```
+
+
+
+
+
+#### S4
+
+We multiply by 1000 as the coefficients are based on millions DKK
+```{r}
+
+# Carbon leakage through exports
+exk_1_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_1*1000 - Exo_model_sens_upper$simulation$exk_1*1000 
+exk_2_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_2*1000 - Exo_model_sens_upper$simulation$exk_2*1000
+exk_3_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_3*1000 - Exo_model_sens_upper$simulation$exk_3*1000
+exk_4_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_4*1000 - Exo_model_sens_upper$simulation$exk_4*1000
+exk_5_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_5*1000 - Exo_model_sens_upper$simulation$exk_5*1000
+exk_6_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_6*1000 - Exo_model_sens_upper$simulation$exk_6*1000
+exk_7_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_7*1000 - Exo_model_sens_upper$simulation$exk_7*1000
+exk_8_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_8*1000 - Exo_model_sens_upper$simulation$exk_8*1000
+exk_9_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$exk_9*1000 - Exo_model_sens_upper$simulation$exk_9*1000
+
+Delta_GHG_ex_row_1_S4_sens_upper= exk_1_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_1
+Delta_GHG_ex_row_2_S4_sens_upper= exk_2_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_2
+Delta_GHG_ex_row_3_S4_sens_upper= exk_3_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_3
+Delta_GHG_ex_row_4_S4_sens_upper= exk_4_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_4
+Delta_GHG_ex_row_5_S4_sens_upper= exk_5_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_5
+Delta_GHG_ex_row_6_S4_sens_upper= exk_6_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_6
+Delta_GHG_ex_row_7_S4_sens_upper= exk_7_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_7
+Delta_GHG_ex_row_8_S4_sens_upper= exk_8_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_8
+Delta_GHG_ex_row_9_S4_sens_upper= exk_9_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_ex_9
+
+Delta_GHG_tot_ex_S4_sens_upper=Delta_GHG_ex_row_1_S4_sens_upper + Delta_GHG_ex_row_2_S4_sens_upper + Delta_GHG_ex_row_3_S4_sens_upper + Delta_GHG_ex_row_4_S4_sens_upper + Delta_GHG_ex_row_5_S4_sens_upper + Delta_GHG_ex_row_6_S4_sens_upper + Delta_GHG_ex_row_7_S4_sens_upper + Delta_GHG_ex_row_8_S4_sens_upper + Delta_GHG_ex_row_9_S4_sens_upper
+
+# Carbon leakage through imports
+
+imk_1_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_1*1000 - Exo_model_sens_upper$simulation$Xk_im_1*1000
+imk_2_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_2*1000 - Exo_model_sens_upper$simulation$Xk_im_2*1000
+imk_3_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_3*1000 - Exo_model_sens_upper$simulation$Xk_im_3*1000
+imk_4_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_4*1000 - Exo_model_sens_upper$simulation$Xk_im_4*1000
+imk_5_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_5*1000 - Exo_model_sens_upper$simulation$Xk_im_5*1000
+imk_6_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_6*1000 - Exo_model_sens_upper$simulation$Xk_im_6*1000
+imk_7_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_7*1000 - Exo_model_sens_upper$simulation$Xk_im_7*1000
+imk_8_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_8*1000 - Exo_model_sens_upper$simulation$Xk_im_8*1000
+imk_9_tot_S4_Delta_sens_upper= Exo_model_S4_sens_upper$simulation$Xk_im_9*1000 - Exo_model_sens_upper$simulation$Xk_im_9*1000
+
+Delta_GHG_im_row_1_S4_sens_upper= imk_1_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_1
+Delta_GHG_im_row_2_S4_sens_upper= imk_2_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_2
+Delta_GHG_im_row_3_S4_sens_upper= imk_3_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_3
+Delta_GHG_im_row_4_S4_sens_upper= imk_4_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_4
+Delta_GHG_im_row_5_S4_sens_upper= imk_5_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_5
+Delta_GHG_im_row_6_S4_sens_upper= imk_6_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_6
+Delta_GHG_im_row_7_S4_sens_upper= imk_7_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_7
+Delta_GHG_im_row_8_S4_sens_upper= imk_8_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_8
+Delta_GHG_im_row_9_S4_sens_upper= imk_9_tot_S4_Delta_sens_upper*S_modelData$leak_coeff_im_9
+
+Delta_GHG_tot_im_S4_sens_upper=Delta_GHG_im_row_1_S4_sens_upper + Delta_GHG_im_row_2_S4_sens_upper + Delta_GHG_im_row_3_S4_sens_upper + Delta_GHG_im_row_4_S4_sens_upper + Delta_GHG_im_row_5_S4_sens_upper + Delta_GHG_im_row_6_S4_sens_upper + Delta_GHG_im_row_7_S4_sens_upper  + Delta_GHG_im_row_8_S4_sens_upper + Delta_GHG_im_row_9_S4_sens_upper
+
+
+# We calculate the total change of emission in total and within each row industry.
+
+
+Delta_GHG_1_row_S4_sens_upper = Delta_GHG_ex_row_1_S4_sens_upper + Delta_GHG_im_row_1_S4_sens_upper
+Delta_GHG_2_row_S4_sens_upper = Delta_GHG_ex_row_2_S4_sens_upper + Delta_GHG_im_row_2_S4_sens_upper
+Delta_GHG_3_row_S4_sens_upper = Delta_GHG_ex_row_3_S4_sens_upper + Delta_GHG_im_row_3_S4_sens_upper
+Delta_GHG_4_row_S4_sens_upper = Delta_GHG_ex_row_4_S4_sens_upper + Delta_GHG_im_row_4_S4_sens_upper
+Delta_GHG_5_row_S4_sens_upper = Delta_GHG_ex_row_5_S4_sens_upper + Delta_GHG_im_row_5_S4_sens_upper
+Delta_GHG_6_row_S4_sens_upper = Delta_GHG_ex_row_6_S4_sens_upper + Delta_GHG_im_row_6_S4_sens_upper
+Delta_GHG_7_row_S4_sens_upper = Delta_GHG_ex_row_7_S4_sens_upper + Delta_GHG_im_row_7_S4_sens_upper
+Delta_GHG_8_row_S4_sens_upper = Delta_GHG_ex_row_8_S4_sens_upper + Delta_GHG_im_row_8_S4_sens_upper
+Delta_GHG_9_row_S4_sens_upper = Delta_GHG_ex_row_9_S4_sens_upper + Delta_GHG_im_row_9_S4_sens_upper
+
+
+
+Delta_GHG_tot_row_S4_sens_upper = Delta_GHG_tot_ex_S4_sens_upper + Delta_GHG_tot_im_S4_sens_upper
+
+
+
+```
+
+We should calculate the acumulative sum:
+
+```{r}
+Delta_GHG_1_cusum_row_S4_sens_upper=cumsum(Delta_GHG_1_row_S4_sens_upper)
+Delta_GHG_2_cusum_row_S4_sens_upper=cumsum(Delta_GHG_2_row_S4_sens_upper)
+Delta_GHG_3_cusum_row_S4_sens_upper=cumsum(Delta_GHG_3_row_S4_sens_upper)
+Delta_GHG_4_cusum_row_S4_sens_upper=cumsum(Delta_GHG_4_row_S4_sens_upper)
+Delta_GHG_5_cusum_row_S4_sens_upper=cumsum(Delta_GHG_5_row_S4_sens_upper)
+Delta_GHG_6_cusum_row_S4_sens_upper=cumsum(Delta_GHG_6_row_S4_sens_upper)
+Delta_GHG_7_cusum_row_S4_sens_upper=cumsum(Delta_GHG_7_row_S4_sens_upper)
+Delta_GHG_8_cusum_row_S4_sens_upper=cumsum(Delta_GHG_8_row_S4_sens_upper)
+Delta_GHG_9_cusum_row_S4_sens_upper=cumsum(Delta_GHG_9_row_S4_sens_upper)
+
+Delta_GHG_tot_cusum_row_S4_sens_upper=cumsum(Delta_GHG_tot_row_S4_sens_upper)
+```
+
+
+We calculate the dynamic change in emission in Denmark
+
+```{r}
+
+Delta_GHG_1_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_1/1000 - Exo_model_sens_upper$simulation$Co2E_1/1000
+Delta_GHG_2_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_2/1000 - Exo_model_sens_upper$simulation$Co2E_2/1000
+Delta_GHG_3_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_3/1000 - Exo_model_sens_upper$simulation$Co2E_3/1000
+Delta_GHG_4_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_4/1000 - Exo_model_sens_upper$simulation$Co2E_4/1000
+Delta_GHG_5_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_5/1000 - Exo_model_sens_upper$simulation$Co2E_5/1000
+Delta_GHG_6_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_6/1000 - Exo_model_sens_upper$simulation$Co2E_6/1000
+Delta_GHG_7_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_7/1000 - Exo_model_sens_upper$simulation$Co2E_7/1000
+Delta_GHG_8_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_8/1000 - Exo_model_sens_upper$simulation$Co2E_8/1000
+Delta_GHG_9_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_9/1000 - Exo_model_sens_upper$simulation$Co2E_9/1000
+
+Delta_GHG_HH_DK_S4_sens_upper= Exo_model_S4_sens_upper$simulation$Co2E_HH/1000 - Exo_model_sens_upper$simulation$Co2E_HH/1000
+
+Delta_GHG_tot_DK_S4_sens_upper =Exo_model_S4_sens_upper$simulation$Co2E_tot/1000 - Exo_model_sens_upper$simulation$Co2E_tot/1000
+```
+
+We should calculate the cumulative sum
+
+
+```{r}
+Delta_GHG_tot_cusum_DK_S4_sens_upper=cumsum(Delta_GHG_tot_DK_S4_sens_upper)
+```
+
+
+### Leakage rates
+
+
+```{r}
+
+
+Delta_GHG_tot_cusum_row_S1_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S2_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S4_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_row_S3_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3_sens_upper), START = c(2019,1),FREQ=1)
+
+Delta_GHG_tot_cusum_DK_S1_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S1_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S2_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S2_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S4_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S4_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_DK_S3_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_DK_S3_sens_upper), START = c(2019,1),FREQ=1)
+
+Delta_GHG_tot_cusum_world_S1_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S1_sens_upper+Delta_GHG_tot_cusum_DK_S1_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S2_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S2_sens_upper+Delta_GHG_tot_cusum_DK_S2_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S4_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S4_sens_upper+Delta_GHG_tot_cusum_DK_S4_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GHG_tot_cusum_world_S3_sens_upper=TIMESERIES(c(Delta_GHG_tot_cusum_row_S3_sens_upper+Delta_GHG_tot_cusum_DK_S3_sens_upper), START = c(2019,1),FREQ=1)
+
+Leak_rate_tot_S1_sens_upper=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S1_sens_upper/Delta_GHG_tot_cusum_DK_S1_sens_upper), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S2_sens_upper=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S2_sens_upper/Delta_GHG_tot_cusum_DK_S2_sens_upper), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S4_sens_upper=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S4_sens_upper/Delta_GHG_tot_cusum_DK_S4_sens_upper), START = c(2019,1),FREQ=1)
+Leak_rate_tot_S3_sens_upper=TIMESERIES(c(-Delta_GHG_tot_cusum_row_S3_sens_upper/Delta_GHG_tot_cusum_DK_S3_sens_upper), START = c(2019,1),FREQ=1)
+```
+
+
+### Shadow price:
+
+We start by claculating the dynamic change in output:
+
+```{r}
+
+Delta_GDP_tot_cusum_DK_S1_sens_upper=cumsum(Exo_model_S1_sens_upper$simulation$yk*1000000000 - Exo_model_sens_upper$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S2_sens_upper=cumsum(Exo_model_S2_sens_upper$simulation$yk*1000000000 - Exo_model_sens_upper$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S4_sens_upper=cumsum(Exo_model_S4_sens_upper$simulation$yk*1000000000 - Exo_model_sens_upper$simulation$yk*1000000000)
+Delta_GDP_tot_cusum_DK_S3_sens_upper=cumsum(Exo_model_S3_sens_upper$simulation$yk*1000000000 - Exo_model_sens_upper$simulation$yk*1000000000)
+
+Delta_GDP_tot_cusum_DK_S1_sens_upper=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S1_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S2_sens_upper=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S2_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S4_sens_upper=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S4_sens_upper), START = c(2019,1),FREQ=1)
+Delta_GDP_tot_cusum_DK_S3_sens_upper=TIMESERIES(c(Delta_GDP_tot_cusum_DK_S3_sens_upper), START = c(2019,1),FREQ=1)
+
+Shadow_price_DK_S1_sens_upper= Delta_GDP_tot_cusum_DK_S1_sens_upper/Delta_GHG_tot_cusum_DK_S1_sens_upper
+Shadow_price_DK_S2_sens_upper= Delta_GDP_tot_cusum_DK_S2_sens_upper/Delta_GHG_tot_cusum_DK_S2_sens_upper
+Shadow_price_DK_S4_sens_upper= Delta_GDP_tot_cusum_DK_S4_sens_upper/Delta_GHG_tot_cusum_DK_S4_sens_upper
+Shadow_price_DK_S3_sens_upper= Delta_GDP_tot_cusum_DK_S3_sens_upper/Delta_GHG_tot_cusum_DK_S3_sens_upper
+
+Shadow_price_World_S1_sens_upper= Delta_GDP_tot_cusum_DK_S1_sens_upper/Delta_GHG_tot_cusum_world_S1_sens_upper
+Shadow_price_World_S2_sens_upper= Delta_GDP_tot_cusum_DK_S2_sens_upper/Delta_GHG_tot_cusum_world_S2_sens_upper
+Shadow_price_World_S4_sens_upper= Delta_GDP_tot_cusum_DK_S4_sens_upper/Delta_GHG_tot_cusum_world_S4_sens_upper
+Shadow_price_World_S3_sens_upper= Delta_GDP_tot_cusum_DK_S3_sens_upper/Delta_GHG_tot_cusum_world_S3_sens_upper
+
+```
+
+
+
+## plot
+
+```{r, fig.height=7, fig.width=15}
+# Save as PNG
+png("Figure_C1_combined.png", width = 6000, height = 4000, res = 300)
+
+# Set layout: 2 rows, 1 column
+par(mfrow = c(2, 1), oma = c(0, 0, 4, 0), mar = c(4, 5, 3, 1), mgp = c(2.2, 0.8, 0),
+    tcl = -0.3, cex.axis = 1.2, cex.lab = 1.4, cex.main = 1.6)
+
+# Time vector (adjust if needed)
+time_vals <- time(window(Shadow_price_World_S1, start = c(2026,1)))
+
+# === PANEL 1: SHADOW PRICE ===
+plot(window(Shadow_price_World_S1, start = c(2026,1)), type = "n",
+     ylab = "DKK per ton CO2E", main = "Environmental Sacrifice Ratio (Shadow Price)",
+     xlab = "", ylim = c(0, 29000), xlim = c(2026, 2035))
+
+# Add shaded fans for sensitivity (alpha blending with rgb)
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Shadow_price_World_S1_sens1, start = c(2026,1)),
+          rev(window(Shadow_price_World_S1_sens_upper, start = c(2026,1)))), 
+        col = rgb(1, 0, 0, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Shadow_price_World_S2_sens1, start = c(2026,1)),
+          rev(window(Shadow_price_World_S2_sens_upper, start = c(2026,1)))), 
+        col = rgb(0, 0, 1, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Shadow_price_World_S3_sens1, start = c(2026,1)),
+          rev(window(Shadow_price_World_S3_sens_upper, start = c(2026,1)))), 
+        col = rgb(1, 0.5, 0, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Shadow_price_World_S4_sens1, start = c(2026,1)),
+          rev(window(Shadow_price_World_S4_sens_upper, start = c(2026,1)))), 
+        col = rgb(0, 0.5, 0, 0.2), border = NA)
+
+# Add central scenario lines
+lines(window(Shadow_price_World_S1, start = c(2026,1)), col = "red", lwd = 3)
+lines(window(Shadow_price_World_S2, start = c(2026,1)), col = "blue", lwd = 3)
+lines(window(Shadow_price_World_S3, start = c(2026,1)), col = "orange", lwd = 3)
+lines(window(Shadow_price_World_S4, start = c(2026,1)), col = "green", lwd = 3)
+
+legend("topleft", legend = c("Scenario 1: Consumption tax", "Scenario 2: Production tax", 
+                             "Scenario 2b: Carbon Adjustment", "Scenario 1b: Tax + Subsidy"),
+       lty = 1, lwd = 2, bty = "n", col = c("red", "blue", "orange", "green"), cex = 1.2)
+grid()
+
+# === PANEL 2: CUMULATIVE CO2E REDUCTIONS ===
+plot(window(Delta_GHG_tot_cusum_world_S1 / 1e6, start = c(2026,1)), type = "n",
+     ylab = "Million tons CO2E", main = "Cumulative CO2E Reductions (including leakage)",
+     xlab = "", ylim = c(-7, 0), xlim = c(2026, 2035))
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Delta_GHG_tot_cusum_world_S1_sens1 / 1e6, start = c(2026,1)),
+          rev(window(Delta_GHG_tot_cusum_world_S1_sens_upper / 1e6, start = c(2026,1)))), 
+        col = rgb(1, 0, 0, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Delta_GHG_tot_cusum_world_S2_sens1 / 1e6, start = c(2026,1)),
+          rev(window(Delta_GHG_tot_cusum_world_S2_sens_upper / 1e6, start = c(2026,1)))), 
+        col = rgb(0, 0, 1, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Delta_GHG_tot_cusum_world_S3_sens1 / 1e6, start = c(2026,1)),
+          rev(window(Delta_GHG_tot_cusum_world_S3_sens_upper / 1e6, start = c(2026,1)))), 
+        col = rgb(1, 0.5, 0, 0.2), border = NA)
+
+polygon(c(time_vals, rev(time_vals)),
+        c(window(Delta_GHG_tot_cusum_world_S4_sens1 / 1e6, start = c(2026,1)),
+          rev(window(Delta_GHG_tot_cusum_world_S4_sens_upper / 1e6, start = c(2026,1)))), 
+        col = rgb(0, 0.5, 0, 0.2), border = NA)
+
+lines(window(Delta_GHG_tot_cusum_world_S1 / 1e6, start = c(2026,1)), col = "red", lwd = 3)
+lines(window(Delta_GHG_tot_cusum_world_S2 / 1e6, start = c(2026,1)), col = "blue", lwd = 3)
+lines(window(Delta_GHG_tot_cusum_world_S3 / 1e6, start = c(2026,1)), col = "orange", lwd = 3)
+lines(window(Delta_GHG_tot_cusum_world_S4 / 1e6, start = c(2026,1)), col = "green", lwd = 3)
+
+legend("bottomleft", legend = c("Scenario 1: Consumption tax", "Scenario 2: Production tax", 
+                                "Scenario 2b: Carbon Adjustment", "Scenario 1b: Tax + Subsidy"),
+       lty = 1, lwd = 2, bty = "n", col = c("red", "blue", "orange", "green"), cex = 1.2)
+grid()
+
+# Global title
+mtext("Figure C1: Shadow Price and Cumulative CO2E Reductions across Scenarios (with Sensitivity Ranges)",
+      side = 3, outer = TRUE, line = 1, cex = 1.6)
+
+# Close the PNG device
+dev.off()
+
+
 
 ```
 
