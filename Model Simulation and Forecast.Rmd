@@ -1446,7 +1446,7 @@ plot(window((Exo_model_S1$simulation$pconk - Exo_model$simulation$pconk)/Exo_mod
      lwd=3, ylim= c(-0.45,0.5), xlab="")
 lines(window((Exo_model_S1$simulation$ppcon_tax - Exo_model$simulation$ppcon_tax)/Exo_model$simulation$ppcon_tax*100, start= c(2020,1)),
       col = "red", lwd=3)
-legend("bottomleft", legend=c("Aggregate nominal consumption", "Consumer price index"),
+legend("bottomleft", legend=c("Real consumption", "Consumer price index"),
        lty=1, lwd=2, bty="n", col = c("black", "red"), cex=1.2)
 grid()
 
@@ -1463,7 +1463,7 @@ lines(window((Exo_model_S1$simulation$ppcon_140_tot_tax - Exo_model$simulation$p
 lines(window((Exo_model_S1$simulation$ppcon_160_tot_tax - Exo_model$simulation$ppcon_160_tot_tax)*100, start= c(2020,1)), col = "yellow", lwd=3)
 lines(window((Exo_model_S1$simulation$ppcon_180_tot_tax - Exo_model$simulation$ppcon_180_tot_tax)*100, start= c(2020,1)), col = "pink", lwd=3)
 legend("topleft",
-       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),
+       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit & vegetable consumption","Other food consumption"),
        lty=1, lwd=2, bty="n",
        col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
        cex=1.2)
@@ -1476,7 +1476,7 @@ grid()
 # Panel 3
 plot(window((Exo_model_S1$simulation$ck_oth_tot - Exo_model$simulation$ck_oth_tot)/Exo_model$simulation$ck_oth_tot*100, start= c(2020,1)),
      ylim=c(-10,3), col= "red", ylab= "Percentage change from baseline",
-     main= "Real consumptions: Scenario 1 (Consumption tax)", lwd=3, xlab="")
+     main= "Real consumption: Scenario 1 (Consumption tax)", lwd=3, xlab="")
 lines(window((Exo_model_S1$simulation$ck_110_tot - Exo_model$simulation$ck_110_tot)/Exo_model$simulation$ck_110_tot*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window((Exo_model_S1$simulation$ck_120_tot - Exo_model$simulation$ck_120_tot)/Exo_model$simulation$ck_120_tot*100, start= c(2020,1)), col = "green", lwd=3)
 lines(window((Exo_model_S1$simulation$ck_130_tot - Exo_model$simulation$ck_130_tot)/Exo_model$simulation$ck_130_tot*100, start= c(2020,1)), col = "black", lwd=3)
@@ -1484,7 +1484,7 @@ lines(window((Exo_model_S1$simulation$ck_140_tot - Exo_model$simulation$ck_140_t
 lines(window((Exo_model_S1$simulation$ck_160_tot - Exo_model$simulation$ck_160_tot)/Exo_model$simulation$ck_160_tot*100, start= c(2020,1)), col = "yellow", lwd=3)
 lines(window((Exo_model_S1$simulation$ck_180_tot - Exo_model$simulation$ck_180_tot)/Exo_model$simulation$ck_180_tot*100, start= c(2020,1)), col = "pink", lwd=3)
 legend("bottomleft",
-       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),
+       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit & vegetable consumption","Other food consumption"),
        lty=1, lwd=2, bty="n",
        col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
        cex=1.2)
@@ -1500,7 +1500,7 @@ plot(window((Exo_model_S2$simulation$pconk - Exo_model$simulation$pconk)/Exo_mod
      lwd=3, ylim= c(-0.45,0.2), xlab="")
 lines(window((Exo_model_S2$simulation$ppcon_tax - Exo_model$simulation$ppcon_tax)/Exo_model$simulation$ppcon_tax*100, start= c(2020,1)),
       col = "red", lwd=3)
-legend("bottomleft", legend=c("Aggregate nominal consumption", "Consumer price index"),
+legend("bottomleft", legend=c("Real consumption", "Consumer price index"),
        lty=1, lwd=2, bty="n", col = c("black", "red"), cex=1.2)
 grid()
 
@@ -1518,7 +1518,7 @@ lines(window((Exo_model_S2$simulation$ppcon_140_tot_tax - Exo_model$simulation$p
 lines(window((Exo_model_S2$simulation$ppcon_160_tot_tax - Exo_model$simulation$ppcon_160_tot_tax)*100, start= c(2020,1)), col = "yellow", lwd=3)
 lines(window((Exo_model_S2$simulation$ppcon_180_tot_tax - Exo_model$simulation$ppcon_180_tot_tax)*100, start= c(2020,1)), col = "pink", lwd=3)
 legend("topleft",
-       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),
+       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit & vegetable consumption","Other food consumption"),
        lty=1, lwd=2, bty="n",
        col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
        cex=1.2)
@@ -1529,7 +1529,7 @@ grid()
 # Panel 6
 plot(window((Exo_model_S2$simulation$ck_oth_tot - Exo_model$simulation$ck_oth_tot)/Exo_model$simulation$ck_oth_tot*100, start= c(2020,1)),
      ylim=c(-1,0.5), col= "red", ylab= "Percentage change from baseline",
-     main= "Real consumptions: Scenario 2 (Production tax)", lwd=3, xlab="")
+     main= "Real consumption: Scenario 2 (Production tax)", lwd=3, xlab="")
 lines(window((Exo_model_S2$simulation$ck_110_tot - Exo_model$simulation$ck_110_tot)/Exo_model$simulation$ck_110_tot*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window((Exo_model_S2$simulation$ck_120_tot - Exo_model$simulation$ck_120_tot)/Exo_model$simulation$ck_120_tot*100, start= c(2020,1)), col = "green", lwd=3)
 lines(window((Exo_model_S2$simulation$ck_130_tot - Exo_model$simulation$ck_130_tot)/Exo_model$simulation$ck_130_tot*100, start= c(2020,1)), col = "black", lwd=3)
@@ -1537,7 +1537,7 @@ lines(window((Exo_model_S2$simulation$ck_140_tot - Exo_model$simulation$ck_140_t
 lines(window((Exo_model_S2$simulation$ck_160_tot - Exo_model$simulation$ck_160_tot)/Exo_model$simulation$ck_160_tot*100, start= c(2020,1)), col = "yellow", lwd=3)
 lines(window((Exo_model_S2$simulation$ck_180_tot - Exo_model$simulation$ck_180_tot)/Exo_model$simulation$ck_180_tot*100, start= c(2020,1)), col = "pink", lwd=3)
 legend("bottomleft",
-       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit and vegetable consumption","Other food consumption"),
+       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit & vegetable consumption","Other food consumption"),
        lty=1, lwd=2, bty="n",
        col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
        cex=1.2)
@@ -2039,7 +2039,7 @@ plot(window((Exo_model_S2$simulation$xk - Exo_model$simulation$xk)/Exo_model$sim
      lwd=3, xlab="", ylim= c(-1,0.1), cex.main=1.5)
 lines(window((zk_im_tot_S2 - zk_im_tot_BS)/zk_im_tot_BS*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window((final_demand_im_tot_S2 - final_demand_im_tot_BS)/final_demand_im_tot_BS*100, start= c(2020,1)), col = "red", lwd=3)
-legend("bottomleft", legend = c("Exports", "Imports of inputs", "Imports of final consumption"),
+legend("bottomleft", legend = c("Exports", "Imports of production inputs", "Imports of final consumption"),
        lty = 1, lwd = 2, col = c("black", "blue", "red"), bty = "n", cex = 1.2)
 grid()
 
@@ -2073,9 +2073,11 @@ lines(window((Exo_model_S2$simulation$phi_c_130 - Exo_model$simulation$phi_c_130
 lines(window((Exo_model_S2$simulation$phi_c_140 - Exo_model$simulation$phi_c_140)*100, start= c(2020,1)), col = "orange", lwd=3)
 lines(window((Exo_model_S2$simulation$phi_c_160 - Exo_model$simulation$phi_c_160)*100, start= c(2020,1)), col = "yellow", lwd=3)
 lines(window((Exo_model_S2$simulation$phi_c_180 - Exo_model$simulation$phi_c_180)*100, start= c(2020,1)), col = "pink", lwd=3)
-legend("topleft", legend = c("Other", "Bread", "Meat", "Fish", "Dairy", "Fruit/Veg", "Other food"),
-       lty = 1, lwd = 2, col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
-       bty = "n", cex = 1.2)
+legend("topleft",
+       legend=c("Other consumption", "Bread consumption","Meat consumption","Fish consumption","Dairy consumption","Fruit & vegetable consumption","Other food consumption"),
+       lty=1, lwd=2, bty="n",
+       col = c("red", "blue", "green", "black", "orange", "yellow", "pink"),
+       cex=1.2)
 grid()
 
 # Plot 4: Import shares - intermediate inputs
@@ -2091,8 +2093,9 @@ lines(window(zk_im_6_tot_S2 / zk_6_tot_S2 * 100 - zk_im_6_tot_BS / zk_6_tot_BS *
 lines(window(zk_im_7_tot_S2 / zk_7_tot_S2 * 100 - zk_im_7_tot_BS / zk_7_tot_BS * 100, start= c(2020,1)), col = "pink", lwd=3)
 lines(window(zk_im_8_tot_S2 / zk_8_tot_S2 * 100 - zk_im_8_tot_BS / zk_8_tot_BS * 100, start= c(2020,1)), col = "darkgreen", lwd=3)
 lines(window(zk_im_9_tot_S2 / zk_9_tot_S2 * 100 - zk_im_9_tot_BS / zk_9_tot_BS * 100, start= c(2020,1)), col = "darkblue", lwd=3)
-legend("topleft", legend = c("Industry 1", "Industry 2", "Industry 3", "Industry 4", "Industry 5",
-                             "Industry 6", "Industry 7", "Industry 8", "Industry 9"),
+legend("topleft", legend = c("Industry 1 (Agri/Fish/Forest)", "Industry 2 (Mining)", "Industry 3 (Meat/Fish Prod)",
+                                "Industry 4 (Dairy)", "Industry 5 (Bread)", "Industry 6 (Other food)",
+                                "Industry 7 (Energy intensive)", "Industry 8 (Energy prod)", "Industry 9 (Other)"),
        lty = 1, lwd = 2, col = c("red", "blue", "green", "black", "orange", "yellow", "pink", "darkgreen", "darkblue"),
        bty = "n", cex = 1.1)
 grid()
@@ -2116,12 +2119,35 @@ png("Figure_7.png", width = 5000, height = 3000, res = 300)
 
 layout(matrix(c(1, 2,
                 3, 3), nrow = 2, byrow = TRUE),
-       heights = c(1.2, 1.1))
+       heights = c(1.2, 1.2))
 
 par(oma = c(0, 0, 4, 0))
 
 # Optional: your custom theme, if defined
 # theme_journal()
+
+
+
+## --- Top right: Nominal Profit – Scenario 1 ---
+par(mar = c(5, 5, 4, 2))
+plot(window((Exo_model_S1$simulation$b2_1 - Exo_model$simulation$b2_1)/Exo_model$simulation$b2_1*100, start = c(2020,1)),
+     ylim = c(-5.8, 2), col = "red", ylab = "Percentage change from baseline",
+     main = "Nominal Profit: Scenario 1 (Consumption-tax)", lwd = 3, xlab = "", cex.main = 1.5)
+lines(window((Exo_model_S1$simulation$b2_2 - Exo_model$simulation$b2_2)/Exo_model$simulation$b2_2*100, start = c(2020,1)), col = "blue", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_3 - Exo_model$simulation$b2_3)/Exo_model$simulation$b2_3*100, start = c(2020,1)), col = "green", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_4 - Exo_model$simulation$b2_4)/Exo_model$simulation$b2_4*100, start = c(2020,1)), col = "black", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_5 - Exo_model$simulation$b2_5)/Exo_model$simulation$b2_5*100, start = c(2020,1)), col = "orange", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_6 - Exo_model$simulation$b2_6)/Exo_model$simulation$b2_6*100, start = c(2020,1)), col = "yellow", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_7 - Exo_model$simulation$b2_7)/Exo_model$simulation$b2_7*100, start = c(2020,1)), col = "pink", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_8 - Exo_model$simulation$b2_8)/Exo_model$simulation$b2_8*100, start = c(2020,1)), col = "darkgreen", lwd = 3)
+lines(window((Exo_model_S1$simulation$b2_9 - Exo_model$simulation$b2_9)/Exo_model$simulation$b2_9*100, start = c(2020,1)), col = "darkblue", lwd = 3)
+legend("bottomleft", legend = c("Industry 1 (Agri/Forest/Fish)", "Industry 2 (Mining)", "Industry 3 (Meat/Fish Prod)",
+                                "Industry 4 (Dairy)", "Industry 5 (Bread)", "Industry 6 (Other food)",
+                                "Industry 7 (Energy intens.)", "Industry 8 (Energy prod)", "Industry 9 (Other)"),
+       lty = 1, lwd = 2, col = c("red", "blue", "green", "black", "orange", "yellow", "pink", "darkgreen", "darkblue"),
+       bty = "n", cex = 1.2)
+grid()
+
 
 ## --- Top left: Nominal Profit – Scenario 2 ---
 par(mar = c(5, 5, 4, 2))
@@ -2143,25 +2169,7 @@ legend("bottomleft", legend = c("Industry 1 (Agri/Forest/Fish)", "Industry 2 (Mi
        bty = "n", cex = 1.2)
 grid()
 
-## --- Top right: Nominal Profit – Scenario 1 ---
-par(mar = c(5, 5, 4, 2))
-plot(window((Exo_model_S1$simulation$b2_1 - Exo_model$simulation$b2_1)/Exo_model$simulation$b2_1*100, start = c(2020,1)),
-     ylim = c(-4, 2), col = "red", ylab = "Percentage change from baseline",
-     main = "Nominal Profit: Scenario 1 (Consumption-tax)", lwd = 3, xlab = "", cex.main = 1.5)
-lines(window((Exo_model_S1$simulation$b2_2 - Exo_model$simulation$b2_2)/Exo_model$simulation$b2_2*100, start = c(2020,1)), col = "blue", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_3 - Exo_model$simulation$b2_3)/Exo_model$simulation$b2_3*100, start = c(2020,1)), col = "green", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_4 - Exo_model$simulation$b2_4)/Exo_model$simulation$b2_4*100, start = c(2020,1)), col = "black", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_5 - Exo_model$simulation$b2_5)/Exo_model$simulation$b2_5*100, start = c(2020,1)), col = "orange", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_6 - Exo_model$simulation$b2_6)/Exo_model$simulation$b2_6*100, start = c(2020,1)), col = "yellow", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_7 - Exo_model$simulation$b2_7)/Exo_model$simulation$b2_7*100, start = c(2020,1)), col = "pink", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_8 - Exo_model$simulation$b2_8)/Exo_model$simulation$b2_8*100, start = c(2020,1)), col = "darkgreen", lwd = 3)
-lines(window((Exo_model_S1$simulation$b2_9 - Exo_model$simulation$b2_9)/Exo_model$simulation$b2_9*100, start = c(2020,1)), col = "darkblue", lwd = 3)
-legend("bottomleft", legend = c("Industry 1 (Agri/Forest/Fish)", "Industry 2 (Mining)", "Industry 3 (Meat/Fish Prod)",
-                                "Industry 4 (Dairy)", "Industry 5 (Bread)", "Industry 6 (Other food)",
-                                "Industry 7 (Energy intens.)", "Industry 8 (Energy prod)", "Industry 9 (Other)"),
-       lty = 1, lwd = 2, col = c("red", "blue", "green", "black", "orange", "yellow", "pink", "darkgreen", "darkblue"),
-       bty = "n", cex = 1.2)
-grid()
+
 
 # --- Bottom plot: fake narrow width with huge side margins ---
 par(mar = c(3, 25, 4, 25))  # large left and right margins
@@ -2258,32 +2266,32 @@ par(mfrow = c(2, 2),
 
 # --- Plot 1: Total CO2E emissions ---
 plot(window((Delta_GHG_tot_DK_S1*1000)/Exo_model$simulation$Co2E_tot*100, start= c(2020,1)),
-     col= "red", ylab= "Percentage change from baseline", main= "Total CO2-Equivalent emissions", lwd=3, ylim=c(-3,0), xlab="")
+     col= "red", ylab= "Percentage change from baseline", main= "Total CO2E emissions", lwd=3, ylim=c(-3,0), xlab="")
 lines(window(((Delta_GHG_tot_DK_S1 + Delta_GHG_tot_row_S1)*1000)/Exo_model$simulation$Co2E_tot*100, start= c(2020,1)), col = "red", lwd=3, lty=2)
 lines(window((Delta_GHG_tot_DK_S2*1000)/Exo_model$simulation$Co2E_tot*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window(((Delta_GHG_tot_DK_S2 + Delta_GHG_tot_row_S2)*1000)/Exo_model$simulation$Co2E_tot*100, start= c(2020,1)), col = "blue", lwd=3, lty=2)
 legend("bottomleft",
-       legend = c("Scenario 1: Consumption tax (no leakage)", "Scenario 1: with leakage",
-                  "Scenario 2: Production tax (no leakage)", "Scenario 2: with leakage"),
+       legend = c("Scenario 1: Consumption tax excl. leakage", "Scenario 1: Consumption tax incl. leakage",
+                  "Scenario 2: Production tax excl. leakage", "Scenario 2: Production tax incl. leakage"),
        lty = c(1, 2, 1, 2), lwd = 2, bty = "n", col = c("red", "red", "blue", "blue"), cex = 1.2)
 grid()
 
 # --- Plot 2: Shadow prices ---
 plot(window(Shadow_price_DK_S1, start = c(2020,1)),
-     col= "red", ylab= "DKK per ton CO2E reduced", main= "Environmental sacrifice ratio", lwd=3,
+     col= "red", ylab= "Price in DKK per ton CO2E reduced", main= "Environmental sacrifice ratio", lwd=3,
      xlab="", ylim=c(-5000,30000), xlim=c(2025,2035))
 lines(window(Shadow_price_World_S1, start= c(2020,1)), col = "red", lwd=3, lty=2)
 lines(window(Shadow_price_DK_S2, start= c(2020,1)), col = "blue", lwd=3)
 lines(window(Shadow_price_World_S2, start= c(2020,1)), col = "blue", lwd=3, lty=2)
 legend("bottomleft",
-       legend = c("Scenario 1: DK (no leakage)", "Scenario 1: World (with leakage)",
-                  "Scenario 2: DK (no leakage)", "Scenario 2: World (with leakage)"),
+       legend = c("Scenario 1: Consumption tax excl. leakage", "Scenario 1: Consumption tax incl. leakage",
+                  "Scenario 2: Production tax excl. leakage", "Scenario 2: Production tax incl. leakage"),
        lty = c(1, 2, 1, 2), lwd = 2, bty = "n", col = c("red", "red", "blue", "blue"), cex = 1.2)
 grid()
 
 # --- Plot 3: Emissions by industry (Scenario 1) ---
 plot(window((Exo_model_S1$simulation$Co2E_1 - Exo_model$simulation$Co2E_1)/Exo_model$simulation$Co2E_1*100, start= c(2020,1)),
-     col= "red", ylab= "Percentage change from baseline", main= "CO2E: Scenario 1 (Consumption tax)", lwd=3, ylim= c(-2,4), xlab="")
+     col= "red", ylab= "Percentage change from baseline", main= "Industry CO2E emissions: Scenario 1 (Consumption tax)", lwd=3, ylim= c(-2,4), xlab="")
 lines(window((Exo_model_S1$simulation$Co2E_2 - Exo_model$simulation$Co2E_2)/Exo_model$simulation$Co2E_2*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window((Exo_model_S1$simulation$Co2E_3 - Exo_model$simulation$Co2E_3)/Exo_model$simulation$Co2E_3*100, start= c(2020,1)), col = "green", lwd=3)
 lines(window((Exo_model_S1$simulation$Co2E_4 - Exo_model$simulation$Co2E_4)/Exo_model$simulation$Co2E_4*100, start= c(2020,1)), col = "black", lwd=3)
@@ -2302,7 +2310,7 @@ grid()
 
 # --- Plot 4: Emissions by industry (Scenario 2) ---
 plot(window((Exo_model_S2$simulation$Co2E_1 - Exo_model$simulation$Co2E_1)/Exo_model$simulation$Co2E_1*100, start= c(2020,1)),
-     col= "red", ylab= "Percentage change from baseline", main= "CO2E: Scenario 2 (Production tax)", lwd=3, ylim= c(-8,8), xlab="")
+     col= "red", ylab= "Percentage change from baseline", main= "Industry CO2E emissions: Scenario 2 (Production tax)", lwd=3, ylim= c(-8,8), xlab="")
 lines(window((Exo_model_S2$simulation$Co2E_2 - Exo_model$simulation$Co2E_2)/Exo_model$simulation$Co2E_2*100, start= c(2020,1)), col = "blue", lwd=3)
 lines(window((Exo_model_S2$simulation$Co2E_3 - Exo_model$simulation$Co2E_3)/Exo_model$simulation$Co2E_3*100, start= c(2020,1)), col = "green", lwd=3)
 lines(window((Exo_model_S2$simulation$Co2E_4 - Exo_model$simulation$Co2E_4)/Exo_model$simulation$Co2E_4*100, start= c(2020,1)), col = "black", lwd=3)
@@ -2347,10 +2355,10 @@ par(mfrow = c(2, 2),
 # Shared legend
 legend_labels <- c("Scenario 1: Consumption tax",
                    "Scenario 2: Production tax",
-                   "Scenario 2b: Carbon tax – Border Adjustment",
-                   "Scenario 1b: Consumption tax + Subsidy")
+                   "Scenario 1b: Consumption tax + Subsidy",
+                   "Scenario 2b: Production tax + Border Adjustment")
 
-legend_cols <- c("red", "blue", "orange", "green")
+legend_cols <- c("red", "blue", "green", "orange")
 
 # --- Plot 1: Households ---
 plot(window((Exo_model_S1$simulation$fnw_h - Exo_model$simulation$fnw_h)/Exo_model_S1$simulation$yk*100, start = c(2020,1)),
@@ -2416,13 +2424,14 @@ par(mfrow = c(1, 2),
 # Legend labels and colors
 legend_labels <- c("Scenario 1: Consumption tax",
                    "Scenario 2: Production tax",
-                   "Scenario 2b: Carbon tax – Border Adjustment",
-                   "Scenario 1b: Consumption tax + Subsidy")
-legend_cols <- c("red", "blue", "orange", "green")
+                   "Scenario 1b: Consumption tax + Subsidy",
+                   "Scenario 2b: Production tax + Border Adjustment")
+
+legend_cols <- c("red", "blue", "green", "orange")
 
 # --- Plot 1: Shadow price ---
 plot(window(Shadow_price_World_S1, start = c(2026,1)),
-     col = "red", ylab = "DKK per ton CO2E reduced",
+     col = "red", ylab = "Price in DKK per ton CO2E reduced",
      main = "Environmental sacrifice ratio",
      lwd = 3, xlab = "", ylim = c(0, 29000), xlim = c(2026, 2035))
 lines(window(Shadow_price_World_S2, start = c(2026,1)), col = "blue", lwd = 3)
@@ -4138,10 +4147,10 @@ lines(window(Shadow_price_World_S2_sens_upper, start= c(2026,1)), col = "blue", 
 lines(window(Shadow_price_World_S3_sens_upper, start= c(2026,1)), col = "orange", lwd=2, lty=9)
 lines(window(Shadow_price_World_S4_sens_upper, start= c(2026,1)), col = "green", lwd=2, lty=9)
 legend("bottomleft",
-       legend = c("Scenario 1: Main analysis", "Scenario 1: Lower cons elasticities", "Scenario 1: Higher cons elasticities",
-                  "Scenario 2: Main analysis", "Scenario 2: Lower cons elasticities", "Scenario 2: Higher cons elasticities",
-                  "Scenario 2b: Main analysis", "Scenario 2b: Lower cons elasticities", "Scenario 2b: Higher cons elasticities",
-                  "Scenario 1b: Main analysis", "Scenario 1b: Lower cons elasticities", "Scenario 1b: Higher cons elasticities"),
+       legend = c("Scenario 1: Main analysis", "Scenario 1: Lower trade elasticities", "Scenario 1: Higher trade elasticities",
+                  "Scenario 2: Main analysis", "Scenario 2: Lower trade elasticities", "Scenario 2: Higher trade elasticities",
+                  "Scenario 2b: Main analysis", "Scenario 2b: Lower trade elasticities", "Scenario 2b: Higher trade elasticities",
+                  "Scenario 1b: Main analysis", "Scenario 1b: Lower trade elasticities", "Scenario 1b: Higher trade elasticities"),
        lty = c(1, 2, 9, 1, 2, 9, 1, 2, 9, 1, 2, 9),
        lwd = 2,
        col = rep(c("red", "blue", "orange", "green"), each = 3),
@@ -4164,10 +4173,10 @@ lines(window(Delta_GHG_tot_cusum_world_S2_sens_upper / 1e6, start= c(2026,1)), c
 lines(window(Delta_GHG_tot_cusum_world_S3_sens_upper / 1e6, start= c(2026,1)), col = "orange", lwd=2, lty=4)
 lines(window(Delta_GHG_tot_cusum_world_S4_sens_upper / 1e6, start= c(2026,1)), col = "green", lwd=2, lty=4)
 legend("bottomleft",
-       legend = c("Scenario 1: Main analysis", "Scenario 1: Lower cons elasticities", "Scenario 1: Higher cons elasticities",
-                  "Scenario 2: Main analysis", "Scenario 2: Lower cons elasticities", "Scenario 2: Higher cons elasticities",
-                  "Scenario 2b: Main analysis", "Scenario 2b: Lower cons elasticities", "Scenario 2b: Higher cons elasticities",
-                  "Scenario 1b: Main analysis", "Scenario 1b: Lower cons elasticities", "Scenario 1b: Higher cons elasticities"),
+       legend = c("Scenario 1: Main analysis", "Scenario 1: Lower trade elasticities", "Scenario 1: Higher trade elasticities",
+                  "Scenario 2: Main analysis", "Scenario 2: Lower trade elasticities", "Scenario 2: Higher trade elasticities",
+                  "Scenario 2b: Main analysis", "Scenario 2b: Lower trade elasticities", "Scenario 2b: Higher trade elasticities",
+                  "Scenario 1b: Main analysis", "Scenario 1b: Lower trade elasticities", "Scenario 1b: Higher trade elasticities"),
        lty = c(1, 2, 9, 1, 2, 9, 1, 2, 9, 1, 2, 9),
        lwd = 2,
        col = rep(c("red", "blue", "orange", "green"), each = 3),
